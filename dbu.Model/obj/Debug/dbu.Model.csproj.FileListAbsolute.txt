@@ -34,10 +34,3 @@ C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\bin\
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\bin\Debug\dbu.Model.pdb
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\obj\Debug\dbu.Model.dll
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\obj\Debug\dbu.Model.pdb
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\bin\Debug\StObjField.cs.txt
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\bin\Debug\dbu.Model.dll
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\bin\Debug\dbu.Model.pdb
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\obj\Debug\dbu.Model.csprojAssemblyReference.cache
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\obj\Debug\dbu.Model.csproj.CoreCompileInputs.cache
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\obj\Debug\dbu.Model.dll
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Model\obj\Debug\dbu.Model.pdb

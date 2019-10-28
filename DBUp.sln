@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBUp", "DBUp\DBUp.csproj", "{B99D54AD-A552-4193-B2B9-EB271F21F21F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dbu.Model", "dbu.Model\dbu.Model.csproj", "{0FC5504D-E56E-4AA5-945D-F4A2352095E8}"
@@ -8,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dbu.DAL", "dbu.DAL\dbu.DAL.csproj", "{15ABA76A-DA2E-4316-84A1-A23251CD819E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dbu.Build", "dbu.Build\dbu.Build.csproj", "{061A409C-527F-4059-81B9-DFA459E23C5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBUp_Mysql", "DBUp_Mysql\DBUp_Mysql.csproj", "{268A6BD3-87C6-434A-9329-755E108227D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,8 +63,23 @@ Global
 		{061A409C-527F-4059-81B9-DFA459E23C5B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{061A409C-527F-4059-81B9-DFA459E23C5B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{061A409C-527F-4059-81B9-DFA459E23C5B}.Release|x86.ActiveCfg = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Debug|x86.Build.0 = Debug|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|x86.ActiveCfg = Release|Any CPU
+		{268A6BD3-87C6-434A-9329-755E108227D6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4966740D-7D7B-4CC1-8E21-15E4028E5175}
 	EndGlobalSection
 EndGlobal

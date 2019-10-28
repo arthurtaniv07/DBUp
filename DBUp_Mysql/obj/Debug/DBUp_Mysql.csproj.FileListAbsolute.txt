@@ -1,0 +1,12 @@
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\bin\Debug\DBUp_Mysql.exe.config
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\bin\Debug\DBUp_Mysql.exe
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\bin\Debug\DBUp_Mysql.pdb
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\bin\Debug\MySql.Data.dll
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.MainForm.resources
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.Properties.Resources.resources
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.GenerateResource.cache
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CoreCompileInputs.cache
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CopyComplete
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.exe
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.pdb
+C:\Users\baby\Downloads\ServerDatabaseVersionUpdateHelper-master\ServerDatabaseVersionUpdateHelper-master\DBUp_Mysql\obj\Debug\DBUp_Mysql.csprojAssemblyReference.cache

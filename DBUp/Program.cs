@@ -29,10 +29,17 @@ namespace DBUp
 
                 DateTime netTime = DateHelper.GMT2Local(DateHelper.GetNetDate());
 
-                
+
+                if (netTime< new DateTime(2018, 8, 21))
+                {
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
                     Application.Run(new Form1());
+                }
+                else
+                {
+                    MessageBox.Show("未授权");
+                }
             }
             catch (Exception)
             {

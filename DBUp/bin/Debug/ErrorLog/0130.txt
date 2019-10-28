@@ -1,0 +1,13 @@
+****************************异常文本****************************
+【出现时间】：2018/1/30 23:44:46
+【异常类型】：Exception
+【异常信息】：服务器地址不能为空
+【堆栈调用】：   在 dbu.DAL.DBHelper.GetLineStr(String serverAddress, String dbName, String userName, String passWord) 位置 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.DAL\DBHelper.cs:行号 35
+   在 DBUp.Form1.ShengCheng() 位置 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\DBUp\Form1.cs:行号 355
+   在 System.Threading.ThreadHelper.ThreadStart_Context(Object state)
+   在 System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+   在 System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+   在 System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state)
+   在 System.Threading.ThreadHelper.ThreadStart()
+【异常方法】：System.String GetLineStr(System.String, System.String, System.String, System.String)
+***************************************************************

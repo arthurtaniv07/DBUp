@@ -75,13 +75,3 @@ C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Build\bin\
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Build\obj\Debug\dbu.Build.csprojResolveAssemblyReference.cache
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Build\obj\Debug\dbu.Build.dll
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Build\obj\Debug\dbu.Build.pdb
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\bin\Debug\StObjField.cs.txt
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\bin\Debug\dbu.Build.dll
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\bin\Debug\dbu.Build.pdb
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\bin\Debug\dbu.Model.dll
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\bin\Debug\dbu.Model.pdb
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\obj\Debug\dbu.Build.csprojAssemblyReference.cache
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\obj\Debug\dbu.Build.csproj.CoreCompileInputs.cache
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\obj\Debug\dbu.Build.csproj.CopyComplete
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\obj\Debug\dbu.Build.dll
-D:\BaiduNetdiskDownload\DBUp_20171121\dbu.Build\obj\Debug\dbu.Build.pdb
