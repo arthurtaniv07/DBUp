@@ -7,8 +7,28 @@ using System.Text;
 
 namespace DBUp_Mysql
 {
+    public delegate void DBHander(string currDBName, int tabCount, int i);
     public class MySqlOptionHelper : IDisposable
     {
+
+
+        public static DBHander GetDBTableInfohander;
+
+        private int TabsCount = 0;
+        private int TabsInx = 0;
+        public void Set_DbHander(DBHander hander)
+        {
+            GetDBTableInfohander = hander;
+        }
+
+
+        public string DbName
+        {
+            get
+            {
+                return Conn.Database;
+            }
+        }
 
         #region 链接对象处理
 
@@ -58,7 +78,6 @@ namespace DBUp_Mysql
             da.Fill(dt);
             return dt;
         }
-
         /// <summary>
         /// 获取所有表
         /// </summary>
@@ -67,6 +86,8 @@ namespace DBUp_Mysql
         /// <returns></returns>
         public bool GetTables(out List<string> existTableNames, out string errorString)
         {
+            TabsCount = 0;
+            TabsInx = 0;
             existTableNames = new List<string>();
             try
             {
@@ -77,6 +98,7 @@ namespace DBUp_Mysql
                     foreach (DataRow info in schemaInfo.Rows)
                         existTableNames.Add(info.ItemArray[2].ToString());
 
+                    TabsCount = existTableNames.Count;
                     errorString = null;
                     return true;
                 }
@@ -88,6 +110,7 @@ namespace DBUp_Mysql
             }
             catch (Exception exception)
             {
+                TabsCount = 0;
                 errorString = exception.Message;
                 return false;
             }
@@ -99,17 +122,19 @@ namespace DBUp_Mysql
         /// </summary>
         public TableInfo GetTableInfo(string tableName)
         {
+            TabsInx++;
+            GetDBTableInfohander(tableName, TabsCount, TabsInx);
             TableInfo tableInfo = new TableInfo();
             // Schema名
             tableInfo.SchemaName = _SchemaName;
             // 表名
             tableInfo.TableName = tableName;
             // 表注释（注意转义注释中的换行）
-            tableInfo.Comment = _GetTableProperty( tableName, "TABLE_COMMENT").Replace(System.Environment.NewLine, "\\n").Replace("\n", "\\n");
+            tableInfo.Comment = _GetTableProperty(tableName, "TABLE_COMMENT").Replace(System.Environment.NewLine, "\\n").Replace("\n", "\\n");
             // 表校对集
             tableInfo.Collation = _GetTableProperty(tableName, "TABLE_COLLATION");
             // 索引设置
-            tableInfo.IndexInfo = _GetIndexInfo( tableName);
+            tableInfo.IndexInfo = _GetIndexInfo(tableName);
             // 列信息
             DataTable dtColumnInfo = _GetAllColumnInfo(tableName);
             if (dtColumnInfo != null)
@@ -175,14 +200,14 @@ namespace DBUp_Mysql
         /// <summary>
         /// 获取某表格的索引设置
         /// </summary>
-        private Dictionary<string, List<string>> _GetIndexInfo( string tableName)
+        private Dictionary<string, List<string>> _GetIndexInfo(string tableName)
         {
             Dictionary<string, List<string>> indexInfo = new Dictionary<string, List<string>>();
 
             // MySQL的SHOW INDEX语句中无法使用ORDER BY，而List中没有前面的元素就无法在后面指定下标处插入数据，故用下面的数据结构进行整理，其中内层Dictionary的key为序号，value为列名
             Dictionary<string, Dictionary<int, string>> tempIndexInfo = new Dictionary<string, Dictionary<int, string>>();
 
-            MySqlCommand cmd = new MySqlCommand(string.Format(_SHOW_INDEX_SQL, _SchemaTabName( tableName)), Conn);
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SHOW_INDEX_SQL, _SchemaTabName(tableName)), Conn);
             DataTable dt = _ExecuteSqlCommand(cmd);
 
             int count = dt.Rows.Count;
@@ -253,7 +278,7 @@ namespace DBUp_Mysql
             int firstBracketIndex = createTableSql.IndexOf("(");
             return string.Format("CREATE TABLE {0} {1};", _SchemaTabName(tableName), createTableSql.Substring(firstBracketIndex));
         }
-        
+
     }
 
 

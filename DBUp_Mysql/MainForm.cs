@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace DBUp_Mysql
 {
-   
+
     public partial class MainForm : Form
     {
         public class Setting
@@ -26,28 +26,62 @@ namespace DBUp_Mysql
         {
             InitializeComponent();
         }
+        public bool IsDebug = false;
         private void btnCompare_Click(object sender, EventArgs e)
         {
-            Start();
+            if (IsDebug)
+                Start();
+            else
+            {
+                System.Threading.Thread t = new System.Threading.Thread(Start);
+                t.Start();
+            }
         }
         MySqlOptionHelper oldhelper = null;
         MySqlOptionHelper helper = null;
+
+
+        /// <summary>
+        /// 转换数字为指定精度的小数(四舍五入)
+        /// </summary>
+        /// <param name="_input">要转换的小数</param>
+        /// <param name="fractionDigits">保留的精度</param>
+        /// <returns>转换后的结果</returns>
+        public static double ToPrecision(double _input, int fractionDigits)
+        {
+            return Math.Round(_input, fractionDigits, MidpointRounding.AwayFromZero);
+        }
+        public void SetLen(string currDBName, int tabCount, int i)
+        {
+            if (tabCount == i)
+                ReplaceLastLineText(string.Format("当前状态：{1}%", currDBName, ToPrecision(i * 100.0 / tabCount, 2)), OutputType.Comment);
+            else
+                ReplaceLastLineText(string.Format("当前状态：({0}) {1}%", currDBName, ToPrecision(i * 100.0 / tabCount, 2)), OutputType.Comment);
+        }
+
         private void Start()
         {
             RtxResult.Clear();
+
             Dictionary<string, TableInfo> oldTabs = new Dictionary<string, TableInfo>();
             List<string> tabNames = new List<string>();
             string errorMsg = "";
-            using ( oldhelper = new MySqlOptionHelper(oldConn))
+            using (oldhelper = new MySqlOptionHelper(oldConn))
             {
                 if (oldhelper.Open())
                 {
+                    AppendOutputText("开始获取旧数据库表结构(" + oldhelper.DbName + ")\n", OutputType.Comment);
+                    AppendOutputText("...", OutputType.Comment);
+                    oldhelper.Set_DbHander(SetLen);
                     if (oldhelper.GetTables(out tabNames, out errorMsg))
                     {
                         foreach (string tabName in tabNames)
                         {
                             oldTabs.Add(tabName, oldhelper.GetTableInfo(tabName));
                         }
+                        AppendOutputText("\n", OutputType.None);
+                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
+                        AppendOutputText("\n", OutputType.Comment);
                     }
                     else
                     {
@@ -64,12 +98,18 @@ namespace DBUp_Mysql
             {
                 if (helper.Open())
                 {
+                    AppendOutputText("开始获取新数据库表结构(" + helper.DbName + ")\n", OutputType.Comment);
+                    AppendOutputText("...", OutputType.Comment);
+                    helper.Set_DbHander(SetLen);
                     if (helper.GetTables(out tabNames, out errorMsg))
                     {
                         foreach (string tabName in tabNames)
                         {
                             newTabs.Add(tabName, helper.GetTableInfo(tabName));
                         }
+                        AppendOutputText("\n", OutputType.None);
+                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
+                        AppendOutputText("\n", OutputType.Comment);
                     }
                     else
                     {
@@ -80,7 +120,7 @@ namespace DBUp_Mysql
             }
             Setting cs = new Setting();
             cs.CheckCommon = this.cheComm.Checked;
-            CompareAndShowResult(oldTabs, newTabs,cs, out string errorString);
+            CompareAndShowResult(oldTabs, newTabs, cs, out string errorString);
 
             if (!string.IsNullOrEmpty(errorString))
             {
@@ -108,6 +148,8 @@ namespace DBUp_Mysql
                 if (!newTabs.Keys.Contains(tableName))
                     dropTableNames.Add(tableName);
             }
+            AppendOutputText("\n", OutputType.None);
+            AppendOutputText("\n", OutputType.None);
             if (dropTableNames.Count > 0)
             {
                 AppendOutputText("==============================================\n", OutputType.Comment);
@@ -124,8 +166,6 @@ namespace DBUp_Mysql
                 //    AppendOutputText(dropTableSql, OutputType.Sql);
                 //    AppendOutputText("\n", OutputType.None);
                 //}
-                AppendOutputText("\n", OutputType.None);
-                AppendOutputText("\n", OutputType.None);
             }
             // 找出新版本中新增的表
             List<string> addTableNames = new List<string>();
@@ -159,15 +199,14 @@ namespace DBUp_Mysql
                 //        AppendOutputText("\n", OutputType.None);
                 //    }
                 //}
-                AppendOutputText("\n", OutputType.None);
-                AppendOutputText("\n", OutputType.None);
             }
             // 对两版本中均存在的表格进行对比
             foreach (string tableName in newTabs.Keys)
             {
+                if (DeleteLastLintText("表："))
+                    DeleteLastLintText("----------------------------------------------");
                 if (oldTabs.Keys.Contains(tableName))
                 {
-
                     AppendOutputText("----------------------------------------------\n", OutputType.Comment);
                     AppendOutputText(string.Format("表：{0}\n", tableName), OutputType.Comment);
                     TableInfo newTableInfo = newTabs[tableName];
@@ -218,18 +257,18 @@ namespace DBUp_Mysql
                         }
                         if (dropColumnNames.Count > 0)
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            // 如果之前对比出差异并进行了输出，需要先为上一条语句添加逗号结尾
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //// 如果之前对比出差异并进行了输出，需要先为上一条语句添加逗号结尾
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             AppendOutputText(string.Format("新版本中删除以下列：{0}\n", CombineString(dropColumnNames, ",")), OutputType.Comment);
                             //foreach (string columnName in dropColumnNames)
                             //{
@@ -253,17 +292,17 @@ namespace DBUp_Mysql
                         string addColumnNameString = CombineString(addColumnNames, ",");
                         if (addColumnNames.Count > 0)
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             AppendOutputText(string.Format("新版本中新增以下列：{0}\n", CombineString(addColumnNames, ",")), OutputType.Comment);
                             //foreach (string columnName in addColumnNames)
                             //{
@@ -300,20 +339,20 @@ namespace DBUp_Mysql
                         }
                         if (isPrimaryKeySame == false)
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             string newPrimaryKeyString = newTableInfo.PrimaryKeyColumnNames.Count > 0 ? CombineString(newTableInfo.PrimaryKeyColumnNames, ",") : "无";
                             string oldPrimaryKeyString = oldTableInfo.PrimaryKeyColumnNames.Count > 0 ? CombineString(oldTableInfo.PrimaryKeyColumnNames, ",") : "无";
-                            AppendOutputText(string.Format("  新版本中主键为：{0}，而旧版本中为：{1}\n", newPrimaryKeyString, oldPrimaryKeyString), OutputType.Comment);
+                            AppendOutputText(string.Format("  主键：{0} => {1}\n", newPrimaryKeyString, oldPrimaryKeyString), OutputType.Comment);
                             //// 先删除原有的主键设置
                             //AppendOutputText(_DROP_PRIMARY_KEY_SQL, OutputType.Sql);
                             //AppendOutputText(SPLIT_STRING, OutputType.Sql);
@@ -380,7 +419,7 @@ namespace DBUp_Mysql
                                 AppendOutputText(SPLIT_STRING, OutputType.Sql);
                                 hasOutputPartFirstSql = false;
                             }
-                            AppendOutputText(string.Format("新版本中新增以下索引：{0}\n", CombineString(addIndexNames, ",")), OutputType.Comment);
+                            AppendOutputText(string.Format("  新版本中新增以下索引：{0}\n", CombineString(addIndexNames, ",")), OutputType.Comment);
                             foreach (string name in addIndexNames)
                             {
                                 if (hasOutputPartFirstSql == false)
@@ -485,7 +524,7 @@ namespace DBUp_Mysql
                                     if (isCommentSame == false)
                                         AppendOutputText(string.Format("    属性：列注释\"{0}\" => \"{1}\"\n", newColumnInfo.Comment, oldColumnInfo.Comment), OutputType.Comment);
                                     if (isNotEmptySame == false)
-                                        AppendOutputText(string.Format("    属性：{0} => {1}\n", newColumnInfo.IsNotEmpty == true ? "不允许" : "允许", oldColumnInfo.IsNotEmpty == true ? "不允许" : "允许"), OutputType.Comment);
+                                        AppendOutputText(string.Format("    属性：（为空）{0} => {1}\n", newColumnInfo.IsNotEmpty == true ? "不允许" : "允许", oldColumnInfo.IsNotEmpty == true ? "不允许" : "允许"), OutputType.Comment);
                                     if (isAutoIncrementSame == false)
                                         AppendOutputText(string.Format("    属性：列设{0}  =>  {1}\n", newColumnInfo.IsAutoIncrement == true ? "自增" : "不自增", oldColumnInfo.IsAutoIncrement == true ? "自增" : "不自增"), OutputType.Comment);
                                     if (isDefaultValueSame == false)
@@ -739,7 +778,7 @@ namespace DBUp_Mysql
         }
         public void AppendOutputText(string text, OutputType type)
         {
-            Color color= Color.Black;
+            Color color = Color.Black;
             if (type == OutputType.Comment)
                 color = Color.DarkGray;
             else if (type == OutputType.Warning)
@@ -767,6 +806,32 @@ namespace DBUp_Mysql
             Warning,
             Error,
             Sql,
+        }
+        /// <summary>
+        /// 替换最后一行的文本
+        /// </summary>
+        /// <param name="content"></param>
+        public void ReplaceLastLineText(string content, OutputType type = OutputType.Comment)
+        {
+            if (type != OutputType.Sql && type != OutputType.None)
+                content = content.Insert(0, "-- ");
+            RtxResult.Select(RtxResult.Text.LastIndexOf("\n") + 1, RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
+            RtxResult.SelectedText = content;
+            RtxResult.Focus();
+        }
+        public bool DeleteLastLintText(string startContent, OutputType type = OutputType.Comment)
+        {
+            if (type != OutputType.Sql && type != OutputType.None)
+                startContent = startContent.Insert(0, "-- ");
+            RtxResult.Select(RtxResult.Text.LastIndexOf("\n"), RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
+            bool rel = RtxResult.SelectedText.StartsWith("\n" + startContent);
+            if (rel)
+                RtxResult.SelectedText = "";
+            RtxResult.Focus();
+            RtxResult.Select(RtxResult.Text.Length, 0);
+            RtxResult.ScrollToCaret();
+
+            return rel;
         }
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
