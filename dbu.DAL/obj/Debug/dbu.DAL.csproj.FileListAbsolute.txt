@@ -66,3 +66,13 @@ C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.DAL\bin\De
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csprojResolveAssemblyReference.cache
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.DAL\obj\Debug\dbu.DAL.dll
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.DAL\obj\Debug\dbu.DAL.pdb
+E:\WorkSpace\DBUp\dbu.DAL\bin\Debug\StObjField.cs.txt
+E:\WorkSpace\DBUp\dbu.DAL\bin\Debug\dbu.DAL.dll
+E:\WorkSpace\DBUp\dbu.DAL\bin\Debug\dbu.DAL.pdb
+E:\WorkSpace\DBUp\dbu.DAL\bin\Debug\dbu.Model.dll
+E:\WorkSpace\DBUp\dbu.DAL\bin\Debug\dbu.Model.pdb
+E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csprojAssemblyReference.cache
+E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CoreCompileInputs.cache
+E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CopyComplete
+E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.dll
+E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.pdb

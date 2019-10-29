@@ -13,6 +13,7 @@ namespace DBUp_Mysql
 
     public partial class MainForm : Form
     {
+        public bool IsDebug = false;
         public class Setting
         {
             /// <summary>
@@ -26,9 +27,13 @@ namespace DBUp_Mysql
         {
             InitializeComponent();
         }
-        public bool IsDebug = false;
         private void btnCompare_Click(object sender, EventArgs e)
         {
+            if (this.btnCompare.Tag + "" == "1")
+            {
+
+            }
+
             if (IsDebug)
                 Start();
             else
@@ -51,36 +56,47 @@ namespace DBUp_Mysql
         {
             return Math.Round(_input, fractionDigits, MidpointRounding.AwayFromZero);
         }
-        public void SetLen(string currDBName, int tabCount, int i)
+        public void SetLen(string currTabName, int tabCount, int i)
         {
             if (tabCount == i)
-                ReplaceLastLineText(string.Format("当前状态：{1}%", currDBName, ToPrecision(i * 100.0 / tabCount, 2)), OutputType.Comment);
+                ReplaceLastLineText(string.Format("当前状态：{1}%", currTabName, ToPrecision(i * 100.0 / tabCount, 2)), OutputType.Comment);
             else
-                ReplaceLastLineText(string.Format("当前状态：({0}) {1}%", currDBName, ToPrecision(i * 100.0 / tabCount, 2)), OutputType.Comment);
+                ReplaceLastLineText(string.Format("当前状态：{0}% {1}/{2} ({3}) ", ToPrecision(i * 100.0 / tabCount, 2), i, tabCount, currTabName), OutputType.Comment);
         }
 
         private void Start()
         {
             RtxResult.Clear();
 
+            string oldDbName = "";
+            string newDbName = "";
+            string oldServerName = "";
+            string newServerName = "";
+
             Dictionary<string, TableInfo> oldTabs = new Dictionary<string, TableInfo>();
             List<string> tabNames = new List<string>();
             string errorMsg = "";
+
+            this.btnCompare.Tag = "1";
+            this.btnCompare.Enabled = false;
+            this.RtxResult.Enabled = false;
             using (oldhelper = new MySqlOptionHelper(oldConn))
             {
                 if (oldhelper.Open())
                 {
+                    oldDbName = oldhelper.DbName;
+                    oldServerName = oldhelper.Server;
                     AppendOutputText("开始获取旧数据库表结构(" + oldhelper.DbName + ")\n", OutputType.Comment);
-                    AppendOutputText("...", OutputType.Comment);
                     oldhelper.Set_DbHander(SetLen);
                     if (oldhelper.GetTables(out tabNames, out errorMsg))
                     {
+                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
+                        AppendOutputText("...", OutputType.Comment);
                         foreach (string tabName in tabNames)
                         {
                             oldTabs.Add(tabName, oldhelper.GetTableInfo(tabName));
                         }
                         AppendOutputText("\n", OutputType.None);
-                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
                         AppendOutputText("\n", OutputType.Comment);
                     }
                     else
@@ -90,6 +106,17 @@ namespace DBUp_Mysql
                     }
                 }
             }
+
+            //将结果保存为文件
+            string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName);
+            if (!Directory.Exists(resultStr))
+            {
+                Directory.CreateDirectory(resultStr);
+            }
+            string oldInfo = string.Concat("Server=", oldServerName, "\r\nDb=", oldDbName, "\r\nTime=", DateTime.Now.ToString());
+            File.AppendAllText(resultStr + "/old.txt", Newtonsoft.Json.JsonConvert.SerializeObject(oldTabs.Values));
+            File.AppendAllText(resultStr + "/oldInfo.txt", oldInfo);
+
 
             Dictionary<string, TableInfo> newTabs = new Dictionary<string, TableInfo>();
             tabNames = new List<string>();
@@ -98,17 +125,19 @@ namespace DBUp_Mysql
             {
                 if (helper.Open())
                 {
+                    newDbName = helper.DbName;
+                    newServerName = helper.Server;
                     AppendOutputText("开始获取新数据库表结构(" + helper.DbName + ")\n", OutputType.Comment);
-                    AppendOutputText("...", OutputType.Comment);
                     helper.Set_DbHander(SetLen);
                     if (helper.GetTables(out tabNames, out errorMsg))
                     {
+                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
+                        AppendOutputText("...", OutputType.Comment);
                         foreach (string tabName in tabNames)
                         {
                             newTabs.Add(tabName, helper.GetTableInfo(tabName));
                         }
                         AppendOutputText("\n", OutputType.None);
-                        AppendOutputText("  获取到 " + tabNames.Count + " 个表\n", OutputType.Comment);
                         AppendOutputText("\n", OutputType.Comment);
                     }
                     else
@@ -118,6 +147,16 @@ namespace DBUp_Mysql
                     }
                 }
             }
+            this.btnCompare.Enabled = true;
+            this.btnCompare.Tag = "0";
+            this.RtxResult.Enabled = true;
+
+            //将结果保存为文件
+            string newInfo = string.Concat("Server=", newServerName, "\r\nDb=", newDbName, "\r\nTime=", DateTime.Now.ToString());
+            File.AppendAllText(resultStr + "/new.txt", Newtonsoft.Json.JsonConvert.SerializeObject(newTabs.Values));
+            File.AppendAllText(resultStr + "/newInfo.txt", newInfo);
+
+
             Setting cs = new Setting();
             cs.CheckCommon = this.cheComm.Checked;
             CompareAndShowResult(oldTabs, newTabs, cs, out string errorString);
@@ -132,6 +171,7 @@ namespace DBUp_Mysql
                 AppendOutputText("\n", OutputType.Comment);
                 AppendOutputText("对比完毕", OutputType.Comment);
             }
+            File.AppendAllText(resultStr + "/Diff.txt", RtxResult.Text);
         }
 
         /// <summary>
@@ -203,8 +243,6 @@ namespace DBUp_Mysql
             // 对两版本中均存在的表格进行对比
             foreach (string tableName in newTabs.Keys)
             {
-                if (DeleteLastLintText("表："))
-                    DeleteLastLintText("----------------------------------------------");
                 if (oldTabs.Keys.Contains(tableName))
                 {
                     AppendOutputText("----------------------------------------------\n", OutputType.Comment);
@@ -376,17 +414,17 @@ namespace DBUp_Mysql
                         }
                         if (dropIndexNames.Count > 0)
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             AppendOutputText(string.Format("  新版本中删除以下索引：{0}\n", CombineString(dropIndexNames, ",")), OutputType.Comment);
                             foreach (string name in dropIndexNames)
                             {
@@ -463,17 +501,17 @@ namespace DBUp_Mysql
 
                                 if (isIndexColumnSame == false)
                                 {
-                                    if (hasOutputPrefix == false)
-                                    {
-                                        AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                        AppendOutputText("\n", OutputType.None);
-                                        hasOutputPrefix = true;
-                                    }
-                                    if (hasOutputPartFirstSql == true)
-                                    {
-                                        AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                        hasOutputPartFirstSql = false;
-                                    }
+                                    //if (hasOutputPrefix == false)
+                                    //{
+                                    //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                                    //    AppendOutputText("\n", OutputType.None);
+                                    //    hasOutputPrefix = true;
+                                    //}
+                                    //if (hasOutputPartFirstSql == true)
+                                    //{
+                                    //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                                    //    hasOutputPartFirstSql = false;
+                                    //}
                                     AppendOutputText(string.Format("  新版本中名为{0}的索引，涉及的列名为{1}，而旧版本中为{2}\n", name, CombineString(newIndexColumnInfo, ","), CombineString(oldIndexColumnInfo, ",")), OutputType.Comment);
                                     //// 先删除
                                     //string dropIndexSql = string.Format(_DROP_INDEX_SQL, name);
@@ -507,17 +545,17 @@ namespace DBUp_Mysql
                                 bool isDefaultValueSame = newColumnInfo.DefaultValue.Equals(oldColumnInfo.DefaultValue);
                                 if (isDataTypeSame == false || isCommentSame == false || isNotEmptySame == false || isAutoIncrementSame == false || isDefaultValueSame == false)
                                 {
-                                    if (hasOutputPrefix == false)
-                                    {
-                                        AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                        AppendOutputText("\n", OutputType.None);
-                                        hasOutputPrefix = true;
-                                    }
-                                    if (hasOutputPartFirstSql == true)
-                                    {
-                                        AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                        hasOutputPartFirstSql = false;
-                                    }
+                                    //if (hasOutputPrefix == false)
+                                    //{
+                                    //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                                    //    AppendOutputText("\n", OutputType.None);
+                                    //    hasOutputPrefix = true;
+                                    //}
+                                    //if (hasOutputPartFirstSql == true)
+                                    //{
+                                    //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                                    //    hasOutputPartFirstSql = false;
+                                    //}
                                     AppendOutputText(string.Format("  列：{0}\n", columnName), OutputType.Comment);
                                     if (isDataTypeSame == false)
                                         AppendOutputText(string.Format("    属性：数据类型{0} => {1}\n", newColumnInfo.DataType, oldColumnInfo.DataType), OutputType.Comment);
@@ -543,17 +581,17 @@ namespace DBUp_Mysql
                         // 对比表校对集
                         if (!newTableInfo.Collation.Equals(oldTableInfo.Collation))
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             AppendOutputText(string.Format("  校对集：\"{0}\" => \"{1}\"\n", newTableInfo.Collation, oldTableInfo.Collation), OutputType.Comment);
                             //string alterTableComment = string.Format(_ALTER_TABLE_COLLATION_SQL, newTableInfo.Collation);
                             //AppendOutputText(alterTableComment, OutputType.Sql);
@@ -563,30 +601,30 @@ namespace DBUp_Mysql
                         // 对比表注释
                         if (cs.CheckCommon && !newTableInfo.Comment.Equals(oldTableInfo.Comment))
                         {
-                            if (hasOutputPrefix == false)
-                            {
-                                AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
-                                AppendOutputText("\n", OutputType.None);
-                                hasOutputPrefix = true;
-                            }
-                            if (hasOutputPartFirstSql == true)
-                            {
-                                AppendOutputText(SPLIT_STRING, OutputType.Sql);
-                                hasOutputPartFirstSql = false;
-                            }
+                            //if (hasOutputPrefix == false)
+                            //{
+                            //    AppendOutputText(alterTableSqlPrefix, OutputType.Sql);
+                            //    AppendOutputText("\n", OutputType.None);
+                            //    hasOutputPrefix = true;
+                            //}
+                            //if (hasOutputPartFirstSql == true)
+                            //{
+                            //    AppendOutputText(SPLIT_STRING, OutputType.Sql);
+                            //    hasOutputPartFirstSql = false;
+                            //}
                             AppendOutputText(string.Format("  注释：\"{0}\" => \"{1}\"\n", newTableInfo.Comment, oldTableInfo.Comment), OutputType.Comment);
                             //string alterTableComment = string.Format(_ALTER_TABLE_COMMENT_SQL, newTableInfo.Comment);
                             //AppendOutputText(alterTableComment, OutputType.Sql);
                             //hasOutputPartFirstSql = true;
                         }
 
-                        // 最后添加分号结束
-                        if (hasOutputPartFirstSql == true)
-                        {
-                            AppendOutputText(";\n", OutputType.Sql);
-                            hasOutputPrefix = false;
-                            hasOutputPartFirstSql = false;
-                        }
+                        //// 最后添加分号结束
+                        //if (hasOutputPartFirstSql == true)
+                        //{
+                        //    AppendOutputText(";\n", OutputType.Sql);
+                        //    hasOutputPrefix = false;
+                        //    hasOutputPartFirstSql = false;
+                        //}
 
                         //// 进行表数据比较
                         //if (compareRule.CompareWay == TableCompareWays.ColumnInfoAndData)
@@ -748,6 +786,9 @@ namespace DBUp_Mysql
                         //    }
                         //}
                     }
+
+                    if (DeleteLastLintText("表："))
+                        DeleteLastLintText("----------------------------------------------");
                 }
             }
 
@@ -823,10 +864,16 @@ namespace DBUp_Mysql
         {
             if (type != OutputType.Sql && type != OutputType.None)
                 startContent = startContent.Insert(0, "-- ");
-            RtxResult.Select(RtxResult.Text.LastIndexOf("\n"), RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
-            bool rel = RtxResult.SelectedText.StartsWith("\n" + startContent);
+            int offset = 0;
+            if (RtxResult.Text.LastIndexOf("\n") == RtxResult.Text.Length - 1)
+                offset = 1;
+            RtxResult.Select(RtxResult.Text.TrimEnd('\n').LastIndexOf("\n")+ offset, RtxResult.Text.Length - RtxResult.Text.TrimEnd('\n').LastIndexOf("\n")- offset);
+            bool rel = RtxResult.SelectedText.Trim('\n').StartsWith(startContent);
             if (rel)
+            {
+                //ReplaceLastLineText(RtxResult.SelectedText, OutputType.None);
                 RtxResult.SelectedText = "";
+            }
             RtxResult.Focus();
             RtxResult.Select(RtxResult.Text.Length, 0);
             RtxResult.ScrollToCaret();

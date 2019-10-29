@@ -34,3 +34,10 @@ C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\bin\
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\bin\Debug\dbu.Model.pdb
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\obj\Debug\dbu.Model.dll
 C:\Users\Ly\Desktop\Arthur\我的项目\MyProject\DBUpHelper\DBUp\dbu.Model\obj\Debug\dbu.Model.pdb
+E:\WorkSpace\DBUp\dbu.Model\bin\Debug\StObjField.cs.txt
+E:\WorkSpace\DBUp\dbu.Model\bin\Debug\dbu.Model.dll
+E:\WorkSpace\DBUp\dbu.Model\bin\Debug\dbu.Model.pdb
+E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.csprojAssemblyReference.cache
+E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.csproj.CoreCompileInputs.cache
+E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.dll
+E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.pdb

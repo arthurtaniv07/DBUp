@@ -29,6 +29,13 @@ namespace DBUp_Mysql
                 return Conn.Database;
             }
         }
+        public string Server
+        {
+            get
+            {
+                return Conn.DataSource;
+            }
+        }
 
         #region 链接对象处理
 
@@ -123,7 +130,6 @@ namespace DBUp_Mysql
         public TableInfo GetTableInfo(string tableName)
         {
             TabsInx++;
-            GetDBTableInfohander(tableName, TabsCount, TabsInx);
             TableInfo tableInfo = new TableInfo();
             // Schema名
             tableInfo.SchemaName = _SchemaName;
@@ -183,6 +189,7 @@ namespace DBUp_Mysql
                 }
             }
 
+            GetDBTableInfohander(tableName, TabsCount, TabsInx);
             return tableInfo;
         }
 
