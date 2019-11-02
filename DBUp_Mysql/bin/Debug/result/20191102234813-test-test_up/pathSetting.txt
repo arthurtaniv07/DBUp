@@ -1,0 +1,46 @@
+{
+  "Ver": "V1.0",
+  "OldConnection": {
+    "ConnectionString": "Server=localhost;Database=test;Port=-1",
+    "ProviderName": ""
+  },
+  "NewConnection": {
+    "ConnectionString": "Server=localhost;Database=test_up;Port=-1",
+    "ProviderName": ""
+  },
+  "OldPathSetting": {
+    "Path": "pathSetting.txt",
+    "Setting": "Setting.txt",
+    "Tables": "oldTables.txt",
+    "Views": "oldViews.txt",
+    "Procs": "oldProcs.txt",
+    "Funcs": "oldFuncs.txt",
+    "Trigs": "oldTrigs.txt"
+  },
+  "NewPathSetting": {
+    "Path": "pathSetting.txt",
+    "Setting": "Setting.txt",
+    "Tables": "newTables.txt",
+    "Views": "newViews.txt",
+    "Procs": "newProcs.txt",
+    "Funcs": "newFuncs.txt",
+    "Trigs": "newTrigs.txt"
+  },
+  "DiffPathSetting": null,
+  "Setting": {
+    "IsDebug": true,
+    "CheckCommon": false,
+    "IsSearTable": true,
+    "IsSearView": true,
+    "IsSearProc": true,
+    "IsSearFunc": true,
+    "IsSearTri": true,
+    "IsDiff": true,
+    "FileDataPath": null,
+    "IsFileDataPath_Table": false,
+    "IsFileDataPath_View": false,
+    "IsFileDataPath_Trig": false,
+    "IsFileDataPath_Func": false,
+    "IsFileDataPath_Proc": false
+  }
+}

@@ -24,3 +24,17 @@ E:\WorkSpace\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.exe
 E:\WorkSpace\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.pdb
 E:\WorkSpace\DBUp\DBUp_Mysql\bin\Debug\Newtonsoft.Json.dll
 E:\WorkSpace\DBUp\DBUp_Mysql\bin\Debug\Newtonsoft.Json.xml
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\DBUp_Mysql.exe.config
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\DBUp_Mysql.exe
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\DBUp_Mysql.pdb
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\MySql.Data.dll
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\Newtonsoft.Json.dll
+D:\GitProject\DBUp\DBUp_Mysql\bin\Debug\Newtonsoft.Json.xml
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csprojAssemblyReference.cache
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.MainForm.resources
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.Properties.Resources.resources
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.GenerateResource.cache
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CoreCompileInputs.cache
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CopyComplete
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.exe
+D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.pdb

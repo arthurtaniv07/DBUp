@@ -36,6 +36,38 @@ namespace DBUp_Mysql
                 return Conn.DataSource;
             }
         }
+        public string Port
+        {
+            get
+            {
+                try
+                {
+
+                    Conn.Open();
+                    if (Conn.State == ConnectionState.Open)
+                    {
+                        // 列信息
+                        MySqlCommand cmd = new MySqlCommand("show global variables like 'port';", Conn);
+                        DataTable dtColumnInfo = _ExecuteSqlCommand(cmd);
+                        if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
+                        {
+                            return dtColumnInfo.Rows[0][1] + "";
+                        }
+                        return "0";
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                finally
+                {
+                    if (Conn.State == ConnectionState.Open)
+                        Conn.Close();
+                }
+                return "-1";
+                
+            }
+        }
 
         #region 链接对象处理
 
@@ -85,6 +117,8 @@ namespace DBUp_Mysql
             da.Fill(dt);
             return dt;
         }
+
+        #region 表
         /// <summary>
         /// 获取所有表
         /// </summary>
@@ -123,7 +157,6 @@ namespace DBUp_Mysql
             }
         }
 
-
         /// <summary>
         /// 将某张表格的属性作为TableInfo类返回
         /// </summary>
@@ -134,7 +167,7 @@ namespace DBUp_Mysql
             // Schema名
             tableInfo.SchemaName = _SchemaName;
             // 表名
-            tableInfo.TableName = tableName;
+            tableInfo.Name = tableName;
             // 表注释（注意转义注释中的换行）
             tableInfo.Comment = _GetTableProperty(tableName, "TABLE_COMMENT").Replace(System.Environment.NewLine, "\\n").Replace("\n", "\\n");
             // 表校对集
@@ -192,17 +225,16 @@ namespace DBUp_Mysql
             GetDBTableInfohander(tableName, TabsCount, TabsInx);
             return tableInfo;
         }
-
-        private const string _SELECT_COLUMN_INFO_SQL = "SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' ORDER BY ORDINAL_POSITION ASC;";
+        private const string _SELECT_TABLE_INFO_SQL = "SELECT {0} FROM information_schema.TABLES WHERE TABLE_SCHEMA = '{1}' AND TABLE_NAME = '{2}';";
         /// <summary>
-        /// 返回某张表格所有列属性
+        /// 获取某张表的某个属性
         /// </summary>
-        private DataTable _GetAllColumnInfo(string tableName)
+        private string _GetTableProperty(string tableName, string propertyName)
         {
-            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_COLUMN_INFO_SQL, _SchemaName, tableName), Conn);
-            return _ExecuteSqlCommand(cmd);
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TABLE_INFO_SQL, propertyName, _SchemaName, tableName), Conn);
+            DataTable dt = _ExecuteSqlCommand(cmd);
+            return dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
         }
-
         private const string _SHOW_INDEX_SQL = "SHOW INDEX FROM {0} WHERE Key_name != 'PRIMARY' AND Index_type = 'BTREE';";
         /// <summary>
         /// 获取某表格的索引设置
@@ -243,6 +275,19 @@ namespace DBUp_Mysql
 
             return indexInfo;
         }
+
+        private const string _SELECT_COLUMN_INFO_SQL = "SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' ORDER BY ORDINAL_POSITION ASC;";
+        /// <summary>
+        /// 获取所有列信息
+        /// </summary>
+        private DataTable _GetAllColumnInfo(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_COLUMN_INFO_SQL, _SchemaName, tableName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+
+
+
         /// <summary>
         /// 获取数据库中一个数据在SQL语句中的表示形式
         /// </summary>
@@ -261,16 +306,352 @@ namespace DBUp_Mysql
             else
                 return string.Concat("\"", value.ToString().Replace("\"", "\\\""), "\"");
         }
-        private const string _SELECT_TABLE_INFO_SQL = "SELECT {0} FROM information_schema.TABLES WHERE TABLE_SCHEMA = '{1}' AND TABLE_NAME = '{2}';";
+        #endregion
+
+
+        #region 视图
+
+
         /// <summary>
-        /// 获取某张表的某个属性
+        /// 获取所有视图
         /// </summary>
-        private string _GetTableProperty(string tableName, string propertyName)
+        /// <param name="existViewNames"></param>
+        /// <param name="errorString"></param>
+        /// <returns></returns>
+        public bool GetViews(out List<string> existViewNames, out string errorString)
         {
-            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TABLE_INFO_SQL, propertyName, _SchemaName, tableName), Conn);
-            DataTable dt = _ExecuteSqlCommand(cmd);
-            return dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
+            TabsCount = 0;
+            TabsInx = 0;
+            existViewNames = new List<string>();
+            try
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    // 获取已存在的数据表名
+                    DataTable schemaInfo = _GetViews();
+                    foreach (DataRow info in schemaInfo.Rows)
+                        existViewNames.Add(info.ItemArray[2].ToString());
+
+                    TabsCount = existViewNames.Count;
+                    errorString = null;
+                    return true;
+                }
+                else
+                {
+                    errorString = "未知错误";
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                TabsCount = 0;
+                errorString = exception.Message;
+                return false;
+            }
         }
+        /// <summary>
+        /// 将某张表格的属性作为TableInfo类返回
+        /// </summary>
+        public ViewInfo GetViewInfo(string viewName)
+        {
+            TabsInx++;
+            ViewInfo viewInfo = null;
+            // 列信息
+            DataTable dtColumnInfo = _GetAllViewInfo(viewName);
+            if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
+            {
+                viewInfo = new ViewInfo();
+                var row = dtColumnInfo.Rows[0];
+                viewInfo.Name = row[0] + "";
+                viewInfo.CreateSQL = row[1] + "";
+                viewInfo.ClientCharSet = row[2] + "";
+                viewInfo.CharSet = row[3] + "";
+            }
+            GetDBTableInfohander?.Invoke(viewName, TabsCount, TabsInx);
+            return viewInfo;
+        }
+
+        private const string _SELECT_VIEW_INFO_SQL = "SHOW CREATE VIEW `{0}`.`{1}`;";
+        /// <summary>
+        /// 获取视图详细信息
+        /// </summary>
+        private DataTable _GetAllViewInfo(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_VIEW_INFO_SQL, _SchemaName, tableName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+
+
+        private const string _SELECT_VIEWS_SQL = "SELECT * from information_schema.`TABLES` where table_schema = '{0}' and (TABLE_TYPE = 'VIEW'  )";
+        /// <summary>
+        /// 查询所有视图名称
+        /// </summary>
+        /// <returns></returns>
+        private DataTable _GetViews()
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_VIEWS_SQL, _SchemaName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+        #endregion
+
+
+        #region 函数
+
+        public bool GetFuncs(out List<Function> list, out string errorString)
+        {
+            TabsCount = 0;
+            TabsInx = 0;
+            list = new List<Function>();
+            try
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    // 获取已存在的数据表名
+                    DataTable schemaInfo = _GetFuncs();
+                    Function f;
+                    foreach (DataRow row in schemaInfo.Rows)
+                    {
+                        f = new Function();
+                        f.Name = row[1] + "";
+                        f.Definer = row[3] + "";
+                        f.Type = FunctionEnum.FUNCTION;
+                        f.Modified = Convert.ToDateTime(row[4] + "");
+                        f.Created = Convert.ToDateTime(row[4] + "");
+                        f.Comment = row[7] + "";
+                        f.ClientCharSet = row[8] + "";
+                        f.CharSet = row[9] + "";
+                        list.Add(f);
+                    }
+
+                    TabsCount = list.Count;
+                    errorString = null;
+                    return true;
+                }
+                else
+                {
+                    errorString = "未知错误";
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                TabsCount = 0;
+                errorString = exception.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 将某张表格的属性作为TableInfo类返回
+        /// </summary>
+        public FunctionInfo GetFuncInfo(string viewName)
+        {
+            TabsInx++;
+            FunctionInfo viewInfo = null;
+            // 列信息
+            DataTable dtColumnInfo = _GetAllFuncInfo(viewName);
+            if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
+            {
+                viewInfo = new FunctionInfo();
+                var row = dtColumnInfo.Rows[0];
+                viewInfo.Name = row[0] + "";
+                viewInfo.SQLModel = row[1] + "";
+                viewInfo.CreateSQL = row[2] + "";
+                viewInfo.ClientCharSet = row[3] + "";
+                viewInfo.CharSet = row[4] + "";
+            }
+            GetDBTableInfohander?.Invoke(viewName, TabsCount, TabsInx);
+            return viewInfo;
+        }
+
+
+        private const string _SELECT_Func_INFO_SQL = "SHOW CREATE FUNCTION `{0}`.`{1}`;";
+        /// <summary>
+        /// 获取视图详细信息
+        /// </summary>
+        private DataTable _GetAllFuncInfo(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_Func_INFO_SQL, _SchemaName, tableName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+
+        private const string _SELECT_FUNC_SQL = "SHOW FUNCTION STATUS WHERE `Db`='{0}';";
+        /// <summary>
+        /// 查询所有视图名称
+        /// </summary>
+        /// <returns></returns>
+        private DataTable _GetFuncs()
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_FUNC_SQL, _SchemaName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+
+
+
+        #endregion
+
+        #region 存储过程
+
+
+        /// <summary>
+        /// 查询所有存储过程名称
+        /// </summary>
+        /// <returns></returns>
+        public bool GetProcs(out List<Function> list, out string errorString)
+        {
+            TabsCount = 0;
+            TabsInx = 0;
+            list = new List<Function>();
+            try
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    // 获取已存在的数据表名
+                    DataTable schemaInfo = _GetProcs();
+                    Function f;
+                    foreach (DataRow row in schemaInfo.Rows)
+                    {
+                        f = new Function();
+                        f.Name = row[1] + "";
+                        f.Definer = row[3] + "";
+                        f.Type = FunctionEnum.PROCEDURE;
+                        f.Modified = Convert.ToDateTime(row[4] + "");
+                        f.Created = Convert.ToDateTime(row[4] + "");
+                        f.Comment = row[7] + "";
+                        f.ClientCharSet = row[8] + "";
+                        f.CharSet = row[9] + "";
+                        list.Add(f);
+                    }
+
+                    TabsCount = list.Count;
+                    errorString = null;
+                    return true;
+                }
+                else
+                {
+                    errorString = "未知错误";
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                TabsCount = 0;
+                errorString = exception.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 将某张表格的属性作为TableInfo类返回
+        /// </summary>
+        public FunctionInfo GetProcInfo(string viewName)
+        {
+            TabsInx++;
+            FunctionInfo viewInfo = null;
+            // 列信息
+            DataTable dtColumnInfo = _GetAllProcInfo(viewName);
+            if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
+            {
+                viewInfo = new FunctionInfo();
+                var row = dtColumnInfo.Rows[0];
+                viewInfo.Name = row[0] + "";
+                viewInfo.SQLModel = row[1] + "";
+                viewInfo.CreateSQL = row[2] + "";
+                viewInfo.ClientCharSet = row[3] + "";
+                viewInfo.CharSet = row[4] + "";
+            }
+            GetDBTableInfohander?.Invoke(viewName, TabsCount, TabsInx);
+            return viewInfo;
+        }
+
+
+        private const string _SELECT_Proc_INFO_SQL = "SHOW CREATE PROCEDURE `{0}`.`{1}`;";
+        /// <summary>
+        /// 获取视图详细信息
+        /// </summary>
+        private DataTable _GetAllProcInfo(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_Proc_INFO_SQL, _SchemaName, tableName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+
+        private const string _SELECT_PROC_SQL = "SHOW PROCEDURE STATUS WHERE `Db`='{0}';";
+        /// <summary>
+        /// 查询所有存储过程名称
+        /// </summary>
+        /// <returns></returns>
+        private DataTable _GetProcs()
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_PROC_SQL, _SchemaName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+        #endregion
+
+        #region 触发器
+
+
+        /// <summary>
+        /// 查询所触发器名称
+        /// </summary>
+        /// <returns></returns>
+        public bool GetTris(out List<Trigger> list, out string errorString)
+        {
+            TabsCount = 0;
+            TabsInx = 0;
+            list = new List<Trigger>();
+            try
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    // 获取已存在的数据表名
+                    DataTable schemaInfo = _GetTris();
+                    Trigger t;
+                    foreach (DataRow info in schemaInfo.Rows)
+                    {
+                        t = new Trigger();
+                        t.Name = info[0] + "";
+                        t.Event = (TriggerEvent)Enum.Parse(typeof(TriggerEvent), info[1] + "", true);
+                        t.TableName = info[2] + "";
+                        t.Statement = info[3] + "";
+                        t.Time =  (TeiggerTime)Enum.Parse(typeof(TeiggerTime), info[4] + "", true);
+                        t.Created = Convert.ToDateTime(info[5] + "");
+                        t.SQLMode = info[6] + "";
+                        t.Definer = info[7] + "";
+                        t.ClientCharSet = info[8] + "";
+                        t.CharSet = info[9] + "";
+                        list.Add(t);
+                    }
+
+                    TabsCount = list.Count;
+                    errorString = null;
+                    return true;
+                }
+                else
+                {
+                    errorString = "未知错误";
+                    return true;
+                }
+            }
+            catch (Exception exception)
+            {
+                TabsCount = 0;
+                errorString = exception.Message;
+                return false;
+            }
+        }
+
+
+        private const string _SELECT_TRI_SQL = "SHOW TRIGGERS FROM `{0}`;";
+        /// <summary>
+        /// 查询所触发器名称
+        /// </summary>
+        /// <returns></returns>
+        private DataTable _GetTris()
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TRI_SQL, _SchemaName), Conn);
+            return _ExecuteSqlCommand(cmd);
+        }
+        #endregion
 
         private const string _SHOW_CREATE_TABLE_SQL = "SHOW CREATE TABLE {0}";
         /// <summary>

@@ -1,3 +1,0 @@
-Server=localhost
-Db=test
-Time=2019/10/29 23:20:07

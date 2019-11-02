@@ -76,3 +76,13 @@ E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CoreCompileInputs.cache
 E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CopyComplete
 E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.dll
 E:\WorkSpace\DBUp\dbu.DAL\obj\Debug\dbu.DAL.pdb
+D:\GitProject\DBUp\dbu.DAL\bin\Debug\StObjField.cs.txt
+D:\GitProject\DBUp\dbu.DAL\bin\Debug\dbu.DAL.dll
+D:\GitProject\DBUp\dbu.DAL\bin\Debug\dbu.DAL.pdb
+D:\GitProject\DBUp\dbu.DAL\bin\Debug\dbu.Model.dll
+D:\GitProject\DBUp\dbu.DAL\bin\Debug\dbu.Model.pdb
+D:\GitProject\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csprojAssemblyReference.cache
+D:\GitProject\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CoreCompileInputs.cache
+D:\GitProject\DBUp\dbu.DAL\obj\Debug\dbu.DAL.csproj.CopyComplete
+D:\GitProject\DBUp\dbu.DAL\obj\Debug\dbu.DAL.dll
+D:\GitProject\DBUp\dbu.DAL\obj\Debug\dbu.DAL.pdb

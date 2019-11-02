@@ -41,3 +41,10 @@ E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.csprojAssemblyReference.cache
 E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.csproj.CoreCompileInputs.cache
 E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.dll
 E:\WorkSpace\DBUp\dbu.Model\obj\Debug\dbu.Model.pdb
+D:\GitProject\DBUp\dbu.Model\bin\Debug\StObjField.cs.txt
+D:\GitProject\DBUp\dbu.Model\bin\Debug\dbu.Model.dll
+D:\GitProject\DBUp\dbu.Model\bin\Debug\dbu.Model.pdb
+D:\GitProject\DBUp\dbu.Model\obj\Debug\dbu.Model.csprojAssemblyReference.cache
+D:\GitProject\DBUp\dbu.Model\obj\Debug\dbu.Model.csproj.CoreCompileInputs.cache
+D:\GitProject\DBUp\dbu.Model\obj\Debug\dbu.Model.dll
+D:\GitProject\DBUp\dbu.Model\obj\Debug\dbu.Model.pdb

@@ -85,3 +85,13 @@ E:\WorkSpace\DBUp\dbu.Build\obj\Debug\dbu.Build.csproj.CoreCompileInputs.cache
 E:\WorkSpace\DBUp\dbu.Build\obj\Debug\dbu.Build.csproj.CopyComplete
 E:\WorkSpace\DBUp\dbu.Build\obj\Debug\dbu.Build.dll
 E:\WorkSpace\DBUp\dbu.Build\obj\Debug\dbu.Build.pdb
+D:\GitProject\DBUp\dbu.Build\bin\Debug\StObjField.cs.txt
+D:\GitProject\DBUp\dbu.Build\bin\Debug\dbu.Build.dll
+D:\GitProject\DBUp\dbu.Build\bin\Debug\dbu.Build.pdb
+D:\GitProject\DBUp\dbu.Build\bin\Debug\dbu.Model.dll
+D:\GitProject\DBUp\dbu.Build\bin\Debug\dbu.Model.pdb
+D:\GitProject\DBUp\dbu.Build\obj\Debug\dbu.Build.csprojAssemblyReference.cache
+D:\GitProject\DBUp\dbu.Build\obj\Debug\dbu.Build.csproj.CoreCompileInputs.cache
+D:\GitProject\DBUp\dbu.Build\obj\Debug\dbu.Build.csproj.CopyComplete
+D:\GitProject\DBUp\dbu.Build\obj\Debug\dbu.Build.dll
+D:\GitProject\DBUp\dbu.Build\obj\Debug\dbu.Build.pdb

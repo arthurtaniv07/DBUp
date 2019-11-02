@@ -1,3 +1,0 @@
-Server=localhost
-Db=test_up
-Time=2019/10/29 23:33:13
