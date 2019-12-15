@@ -7,7 +7,7 @@
     "IsSearFunc": true,
     "IsSearTri": true,
     "IsDiff": true,
-    "FileDataPath": "20191102180836-olddatabase-newdatabase",
+    "FileDataPath": "20191214154155-easesales-easesales_test",
     "IsFileDataPath_Table": false,
     "IsFileDataPath_View": false,
     "IsFileDataPath_Trig": false,

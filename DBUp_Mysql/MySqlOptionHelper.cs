@@ -88,6 +88,9 @@ namespace DBUp_Mysql
         {
             Conn = new MySqlConnection(connStr);
         }
+        public MySqlOptionHelper()
+        {
+        }
         public bool Open()
         {
             if (Conn.State != ConnectionState.Open)
@@ -306,8 +309,124 @@ namespace DBUp_Mysql
             else
                 return string.Concat("\"", value.ToString().Replace("\"", "\\\""), "\"");
         }
-        #endregion
 
+
+        private const string _SHOW_CREATE_TABLE_SQL = "SHOW CREATE TABLE {0}";
+        /// <summary>
+        /// 获取某张表的建表SQL
+        /// </summary>
+        public string GetCreateTableSql(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SHOW_CREATE_TABLE_SQL, _SchemaTabName(tableName)), Conn);
+            DataTable dt = _ExecuteSqlCommand(cmd);
+            string createTableSql = dt.Rows[0]["Create Table"].ToString();
+            // MySQL提供功能返回的建表SQL不含Schema，这里自己加上
+            int firstBracketIndex = createTableSql.IndexOf("(");
+            return string.Format(_CREATE_TABLE_SQL, _SchemaTabName(tableName), createTableSql.Substring(firstBracketIndex));
+        }
+
+        private const string _CREATE_TABLE_SQL = "CREATE TABLE {0} {1};\n";
+
+
+        private const string _DROP_TABLE_SQL = "DROP TABLE {0};\n";
+        /// <summary>
+        /// 获取删除某张表的SQL
+        /// </summary>
+        public string GetDropTableSql(string tableName)
+        {
+            return string.Format(_DROP_TABLE_SQL, _SchemaTabName(tableName));
+        }
+        private const string _ALTER_TABLE_SQL = "ALTER TABLE {0} ";
+        private const string _DROP_COLUMN_SQL = "DROP COLUMN `{0}`;\n";
+        /// <summary>
+        /// 获取删除列的SQL
+        /// </summary>
+        public string GetDropTableColumnSql(string tableName,string columnName)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_COLUMN_SQL, columnName));
+        }
+        private const string _ADD_COLUMN_SQL = "ADD COLUMN `{0}` {1} {2}{3} COMMENT '{4}';\n";
+        /// <summary>
+        /// 获取添加列的SQL
+        /// </summary>
+        public string GetAddTableColumnSql(string tableName, ColumnInfo columnInfo)
+        {
+            string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
+            // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
+            string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment));
+        }
+        private const string _CHANGE_COLUMN_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} COMMENT '{4}';\n";
+        /// <summary>
+        /// 获取修改列的SQL
+        /// </summary>
+        public string GetChangeTableColumnSql(string tableName, ColumnInfo columnInfo)
+        {
+            string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
+            // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
+            string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment));
+        }
+
+        private const string _DROP_PRIMARY_KEY_SQL = "DROP PRIMARY KEY ;\n";
+        /// <summary>
+        /// 获取删除主键的SQL
+        /// </summary>
+        public string GetDropPrimarySql(string tableName)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), _DROP_PRIMARY_KEY_SQL);
+        }
+
+        private const string _ADD_PRIMARY_KEY_SQL = "ADD PRIMARY KEY ({0});\n";
+        /// <summary>
+        /// 获取添加主键的SQL
+        /// </summary>
+        public string GetAddPrimarySql(string tableName, List<string> primaryKeyDefine)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_PRIMARY_KEY_SQL, "`" + string.Join("`,`", primaryKeyDefine) + "`"));
+        }
+
+        private const string _DROP_INDEX_SQL = "DROP INDEX {0};\n";
+        /// <summary>
+        /// 获取删除索引的SQL
+        /// </summary>
+        public string GetDropIndexSql(string tableName,params string[] indexDefine)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_INDEX_SQL, "`" + string.Join("`,`", indexDefine) + "`"));
+        }
+        private const string _ADD_UNIQUE_INDEX_SQL = "ADD UNIQUE INDEX `{0}` ({1});\n";
+        /// <summary>
+        /// 获取添加唯一索引的SQL
+        /// </summary>
+        public string GetAddUniqueSql(string tableName,string inxName, params string[] columnNames)
+        {
+            List<string> columnDefine = new List<string>();
+            // 根据新增索引属性生成添加新索引的SQL
+            // 注意列名后必须声明排序方式，MySQL只支持索引的升序排列
+            foreach (string columnName in columnNames)
+                columnDefine.Add(string.Format("`{0}` ASC", columnName));
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_UNIQUE_INDEX_SQL, inxName, string.Join(",", columnDefine)));
+        }
+
+        private const string _ALTER_TABLE_COLLATION_SQL = "COLLATE = {0};\n";
+        /// <summary>
+        /// 获取修改表校对集的SQL
+        /// </summary>
+        public string GetChangeCollateSql(string tableName, string collation)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ALTER_TABLE_COLLATION_SQL, collation));
+        }
+        private const string _ALTER_TABLE_COMMENT_SQL = "COMMENT = '{0}';\n";
+        /// <summary>
+        /// 获取修改表校对集的SQL
+        /// </summary>
+        public string GetChangeCommentSql(string tableName, string comment)
+        {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ALTER_TABLE_COMMENT_SQL, comment));
+        }
+        #endregion
+        private const string _DROP_DATA_SQL = "DELETE FROM {0} WHERE {1};\n";
+        private const string _UPDATE_DATA_SQL = "UPDATE {0} SET {1} WHERE {2};\n";
 
         #region 视图
 
@@ -391,6 +510,17 @@ namespace DBUp_Mysql
         {
             MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_VIEWS_SQL, _SchemaName), Conn);
             return _ExecuteSqlCommand(cmd);
+        }
+
+        private const string _DROP_VIEW_SQL = "DROP VIEW `{0}`;\n";
+        public string GetDropViewSql(string viewName)
+        {
+            return string.Format(_DROP_VIEW_SQL, viewName);
+        }
+        private const string _ADD_VIEW_SQL = "{0}\n";
+        public string GetAddViewSql(string sql)
+        {
+            return string.Format(_ADD_VIEW_SQL, sql);
         }
         #endregion
 
@@ -487,6 +617,16 @@ namespace DBUp_Mysql
         }
 
 
+        private const string _DROP_FUNC_SQL = "DROP FUNCTION `{0}`;\n";
+        public string GetDropFuncSql(string viewName)
+        {
+            return string.Format(_DROP_FUNC_SQL, viewName);
+        }
+        private const string _ADD_FUNC_SQL = "{0}\n";
+        public string GetAddFuncSql(string sql)
+        {
+            return string.Format(_ADD_FUNC_SQL, sql);
+        }
 
         #endregion
 
@@ -542,7 +682,7 @@ namespace DBUp_Mysql
         }
 
         /// <summary>
-        /// 将某张表格的属性作为TableInfo类返回
+        /// 将某存储过程的属性作为FunctionInfo类返回
         /// </summary>
         public FunctionInfo GetProcInfo(string viewName)
         {
@@ -567,7 +707,7 @@ namespace DBUp_Mysql
 
         private const string _SELECT_Proc_INFO_SQL = "SHOW CREATE PROCEDURE `{0}`.`{1}`;";
         /// <summary>
-        /// 获取视图详细信息
+        /// 获取存储过程详细信息
         /// </summary>
         private DataTable _GetAllProcInfo(string tableName)
         {
@@ -585,6 +725,20 @@ namespace DBUp_Mysql
             MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_PROC_SQL, _SchemaName), Conn);
             return _ExecuteSqlCommand(cmd);
         }
+
+
+
+        private const string _DROP_PROCS_SQL = "DROP PROCEDURE `{0}`;\n";
+        public string GetDropProcsSql(string viewName)
+        {
+            return string.Format(_DROP_PROCS_SQL, viewName);
+        }
+        private const string _ADD_PROCS_SQL = "{0}\n";
+        public string GetAddProcsSql(string sql)
+        {
+            return string.Format(_ADD_PROCS_SQL, sql);
+        }
+
         #endregion
 
         #region 触发器
@@ -651,21 +805,24 @@ namespace DBUp_Mysql
             MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TRI_SQL, _SchemaName), Conn);
             return _ExecuteSqlCommand(cmd);
         }
+
+
+
+        private const string _DROP_TRIS_SQL = "DROP TRIGGER `{0}`;\n";
+        public string GetDropTrisSql(string viewName)
+        {
+            return string.Format(_DROP_TRIS_SQL, viewName);
+        }
+        private const string _ADD_TRIS_SQL = @"CREATE TRIGGER {0} 
+    {1} {2} on {3} 
+    FOR EACH ROW 
+{4}\n";
+        public string GetAddTrisSql(Trigger model)
+        {
+            return string.Format(_ADD_TRIS_SQL, model.Name, model.Time.ToString(), model.Event.ToString(), model.TableName, model.Statement);
+        }
         #endregion
 
-        private const string _SHOW_CREATE_TABLE_SQL = "SHOW CREATE TABLE {0}";
-        /// <summary>
-        /// 获取某张表的建表SQL
-        /// </summary>
-        private string _GetCreateTableSql(string tableName, string targetSchemaName)
-        {
-            MySqlCommand cmd = new MySqlCommand(string.Format(_SHOW_CREATE_TABLE_SQL, _SchemaTabName(tableName)), Conn);
-            DataTable dt = _ExecuteSqlCommand(cmd);
-            string createTableSql = dt.Rows[0]["Create Table"].ToString();
-            // MySQL提供功能返回的建表SQL不含Schema，这里自己加上
-            int firstBracketIndex = createTableSql.IndexOf("(");
-            return string.Format("CREATE TABLE {0} {1};", _SchemaTabName(tableName), createTableSql.Substring(firstBracketIndex));
-        }
 
     }
 

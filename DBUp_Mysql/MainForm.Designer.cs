@@ -33,6 +33,7 @@
             this.cheComm = new System.Windows.Forms.CheckBox();
             this.lblTotalTime = new System.Windows.Forms.Label();
             this.btnTh = new System.Windows.Forms.Button();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // btnCompare
@@ -94,11 +95,22 @@
             this.btnTh.Visible = false;
             this.btnTh.Click += new System.EventHandler(this.btnTh_Click);
             // 
+            // linkLabel1
+            // 
+            this.linkLabel1.AutoSize = true;
+            this.linkLabel1.Location = new System.Drawing.Point(209, 364);
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.Size = new System.Drawing.Size(383, 12);
+            this.linkLabel1.TabIndex = 29;
+            this.linkLabel1.TabStop = true;
+            this.linkLabel1.Text = "注：谨慎使用该工具生成的SQL，造成的后果本软件以及开发者概不负责";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(600, 381);
+            this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.lblTotalTime);
             this.Controls.Add(this.cheComm);
             this.Controls.Add(this.RtxResult);
@@ -107,8 +119,9 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Form1";
+            this.Text = "数据库升级助手(简易版) - 作者：谭盼(13012363357)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -122,6 +135,7 @@
         private System.Windows.Forms.CheckBox cheComm;
         private System.Windows.Forms.Label lblTotalTime;
         private System.Windows.Forms.Button btnTh;
+        private System.Windows.Forms.LinkLabel linkLabel1;
     }
 }
 

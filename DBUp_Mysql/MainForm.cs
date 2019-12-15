@@ -143,11 +143,45 @@ namespace DBUp_Mysql
 
         public void SetTotalTime()
         {
-            lblTotalTime.Text = lblTotalTime.Tag + Tools.GetTimeSpan(DateTime.Now - startTime);
+            //lblTotalTime.Text = lblTotalTime.Tag + Tools.GetTimeSpan(DateTime.Now - startTime);
         }
         
         private void Start()
         {
+            if (cs.IsDebug)
+            {
+
+                StartCompare();
+                return;
+            }
+            try
+            {
+                StartCompare();
+            }
+            catch (Exception e)
+            {
+                try
+                {
+
+                    //St.StStack stExceptionStack = new St.StStack(0);
+                    //string content = stExceptionStack.ToString();
+                    string content = e.ToString();
+                    content = content.Insert(0, string.Format("---------------{0}---------------", DateTime.Now.ToString()));
+                    string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}-Error.txt", DateTime.Now.ToString("yyyyMMdd"));
+
+                    File.AppendAllText(resultStr, content);
+                    MessageBox.Show(e.ToString());
+                }
+                catch (Exception e1)
+                {
+                    MessageBox.Show(e1.ToString());
+                }
+            }
+        }
+
+        private void StartCompare()
+        {
+
             cs.CheckCommon = this.cheComm.Checked;
 
 
@@ -156,12 +190,12 @@ namespace DBUp_Mysql
             totalTime.Start();
             SetTotalTime();
 
-
-            RtxResult.Clear();
-
+            ClearOutputText();
+            //throw new Exception("testing");
             List<string> tempList = new List<string>();
             List<Function> tempFunList = new List<Function>();
             string tempStt = "";
+            string tempStr = "";
             bool tempBool = false;
 
             this.btnCompare.Tag = "1";
@@ -241,7 +275,7 @@ namespace DBUp_Mysql
 
                 if (cs.IsDiff)
                 {
-                    viewHelper.CompareAndShow(oldTabs, newTabs, cs, out string errorString);
+                    viewHelper.CompareAndShow(oldTabs, newTabs, cs, out string errorString, newConnString);
 
                     if (string.IsNullOrEmpty(errorString) && tempBool)
                     {
@@ -255,7 +289,7 @@ namespace DBUp_Mysql
                         //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
-                    tempStt = RtxResult.Text;
+                    tempStr = RtxResult.Text;
                 }
             }
 
@@ -321,12 +355,12 @@ namespace DBUp_Mysql
                         //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
                         //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                    File.AppendAllText(resultStr + diffpathCs.Views, string.IsNullOrWhiteSpace(tempStt) ? RtxResult.Text : RtxResult.Text.Replace(tempStt, ""));
+                    File.AppendAllText(resultStr + diffpathCs.Views, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
 
-                    tempStt = RtxResult.Text;
+                    tempStr = RtxResult.Text;
                 }
             }
-            
+
             if (cs.IsSearTri)
             {
                 tempBool = true;
@@ -379,7 +413,7 @@ namespace DBUp_Mysql
                     if (string.IsNullOrEmpty(errorString) && tempBool)
                     {
                         AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Trigs, string.IsNullOrWhiteSpace(tempStt) ? RtxResult.Text : RtxResult.Text.Replace(tempStt, ""));
+                        File.AppendAllText(resultStr + diffpathCs.Trigs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
                     }
                     else
                     {
@@ -387,7 +421,7 @@ namespace DBUp_Mysql
                         //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
-                    tempStt = RtxResult.Text;
+                    tempStr = RtxResult.Text;
                 }
             }
 
@@ -447,7 +481,7 @@ namespace DBUp_Mysql
                     if (string.IsNullOrEmpty(errorString) && tempBool)
                     {
                         AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Procs, string.IsNullOrWhiteSpace(tempStt) ? RtxResult.Text : RtxResult.Text.Replace(tempStt, ""));
+                        File.AppendAllText(resultStr + diffpathCs.Procs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
                     }
                     else
                     {
@@ -455,12 +489,12 @@ namespace DBUp_Mysql
                         //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
 
-                    tempStt = RtxResult.Text;
+                    tempStr = RtxResult.Text;
                 }
             }
 
 
-            
+
             if (cs.IsSearFunc)
             {
                 tempBool = true;
@@ -511,7 +545,7 @@ namespace DBUp_Mysql
                     if (string.IsNullOrEmpty(errorString) && tempBool)
                     {
                         AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Funcs, string.IsNullOrWhiteSpace(tempStt) ? RtxResult.Text : RtxResult.Text.Replace(tempStt, ""));
+                        File.AppendAllText(resultStr + diffpathCs.Funcs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
                     }
                     else
                     {
@@ -533,11 +567,68 @@ namespace DBUp_Mysql
             AppendOutputText("执行完毕\n", OutputType.Comment);
 
             totalTime.Stop();
-            AbortTh();
+            //try
+            //{
+            //    AbortTh();
+            //}
+            //catch (Exception)
+            //{
+            //}
         }
-        
 
-        
+
+        //定义更新输出的委托
+        public delegate bool OutputTextHander(string text, OutputType type);
+        OutputTextHander appendOutputText;//追加
+        OutputTextHander replaceOutputText;//替换
+        public delegate bool ClearTextHander();
+        ClearTextHander clearOutputText;//清空
+
+        public bool ClearOutputText()
+        {
+
+            if (RtxResult.InvokeRequired)
+            {
+                //// 解决窗体关闭时出现“访问已释放句柄”异常
+                //while (RtxResult.IsHandleCreated == false)
+                //{
+                //    if (RtxResult.Disposing || RtxResult.IsDisposed) return false;
+                //}
+
+                //BeginInvoke(new Action(() =>
+                //{
+                //    RtxResult.SelectionColor = color;
+                //    //_lastTextColor = color;
+
+                //    if (type != OutputType.Sql && type != OutputType.None)
+                //        RtxResult.AppendText("-- ");
+
+                //    RtxResult.AppendText(text);
+                //    RtxResult.Focus();
+                //    RtxResult.ScrollToCaret();
+                //    RtxResult.Refresh();
+                //}));
+                ClearTextHander d = new ClearTextHander(ClearOutputText);
+                this.Invoke(d, new object[] { });
+                Application.DoEvents();
+            }
+            else
+            {
+                RtxResult.Clear();
+                RtxResult.Refresh();
+            }
+            //RtxResult.SelectionColor = color;
+            ////_lastTextColor = color;
+
+            //if (type != OutputType.Sql && type != OutputType.None)
+            //    RtxResult.AppendText("-- ");
+
+            //RtxResult.AppendText(text);
+            //RtxResult.Focus();
+            //RtxResult.ScrollToCaret();
+            return true;
+        }
+
         public bool AppendOutputText(string text, OutputType type)
         {
             Color color = Color.Black;
@@ -552,17 +643,58 @@ namespace DBUp_Mysql
             //else
             //    color = _lastTextColor;
 
-            RtxResult.SelectionColor = color;
-            //_lastTextColor = color;
 
-            if (type != OutputType.Sql && type != OutputType.None)
-                RtxResult.AppendText("-- ");
+            if (RtxResult.InvokeRequired)
+            {
+                //// 解决窗体关闭时出现“访问已释放句柄”异常
+                //while (RtxResult.IsHandleCreated == false)
+                //{
+                //    if (RtxResult.Disposing || RtxResult.IsDisposed) return false;
+                //}
 
-            RtxResult.AppendText(text);
-            RtxResult.Focus();
-            RtxResult.ScrollToCaret();
+                //BeginInvoke(new Action(() =>
+                //{
+                //    RtxResult.SelectionColor = color;
+                //    //_lastTextColor = color;
+
+                //    if (type != OutputType.Sql && type != OutputType.None)
+                //        RtxResult.AppendText("-- ");
+
+                //    RtxResult.AppendText(text);
+                //    RtxResult.Focus();
+                //    RtxResult.ScrollToCaret();
+                //    RtxResult.Refresh();
+                //}));
+                SetTextCallback d = new SetTextCallback(ReplaceLastLineText);
+                this.Invoke(d, new object[] { text, type });
+                Application.DoEvents();
+            }
+            else
+            {
+                RtxResult.SelectionColor = color;
+                //_lastTextColor = color;
+
+                if (type != OutputType.Sql && type != OutputType.None)
+                    RtxResult.AppendText("-- ");
+
+                RtxResult.AppendText(text);
+                RtxResult.Focus();
+                RtxResult.ScrollToCaret();
+                RtxResult.Refresh();
+            }
+            //RtxResult.SelectionColor = color;
+            ////_lastTextColor = color;
+
+            //if (type != OutputType.Sql && type != OutputType.None)
+            //    RtxResult.AppendText("-- ");
+
+            //RtxResult.AppendText(text);
+            //RtxResult.Focus();
+            //RtxResult.ScrollToCaret();
             return true;
         }
+        // 定义委托类型
+        delegate bool SetTextCallback(string content, OutputType type = OutputType.Comment);
         /// <summary>
         /// 替换最后一行的文本
         /// </summary>
@@ -571,16 +703,58 @@ namespace DBUp_Mysql
         {
             try
             {
-                //System.Threading.Thread.Sleep(10);
-                //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText Start" + "\r\n");
-                if (type != OutputType.Sql && type != OutputType.None)
-                    content = content.Insert(0, "-- ");
-                RtxResult.Select(RtxResult.Text.LastIndexOf("\n") + 1, RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
-                RtxResult.SelectedText = content;
-                RtxResult.Focus();
-                //System.Threading.Thread.Sleep(10);
-                //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
-                RtxResult.ScrollToCaret();
+
+                if (RtxResult.InvokeRequired)
+                {
+                    //// 解决窗体关闭时出现“访问已释放句柄”异常
+                    //while (RtxResult.IsHandleCreated == false)
+                    //{
+                    //    if (RtxResult.Disposing || RtxResult.IsDisposed) return false;
+                    //}
+                    //BeginInvoke(new Action(() =>
+                    //{
+                    //    ////RtxResult.Text = content;
+                    //    //System.Threading.Thread.Sleep(10);
+                    //    //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText Start" + "\r\n");
+                    //    if (type != OutputType.Sql && type != OutputType.None)
+                    //        content = content.Insert(0, "-- ");
+                    //    RtxResult.Select(RtxResult.Text.LastIndexOf("\n") + 1, RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
+                    //    RtxResult.SelectedText = content;
+                    //    RtxResult.Focus();
+                    //    //System.Threading.Thread.Sleep(10);
+                    //    //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
+                    //    RtxResult.ScrollToCaret();
+                    //    RtxResult.Refresh();
+                    //}));
+                    SetTextCallback d = new SetTextCallback(ReplaceLastLineText);
+                    this.Invoke(d, new object[] { content, type });
+                    Application.DoEvents();
+                }
+                else
+                {
+                    ////RtxResult.Text = content;
+                    //System.Threading.Thread.Sleep(10);
+                    //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText Start" + "\r\n");
+                    if (type != OutputType.Sql && type != OutputType.None)
+                        content = content.Insert(0, "-- ");
+                    RtxResult.Select(RtxResult.Text.LastIndexOf("\n") + 1, RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
+                    RtxResult.SelectedText = content;
+                    RtxResult.Focus();
+                    //System.Threading.Thread.Sleep(10);
+                    //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
+                    RtxResult.ScrollToCaret();
+                    RtxResult.Refresh();
+                }
+                ////System.Threading.Thread.Sleep(10);
+                ////File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText Start" + "\r\n");
+                //if (type != OutputType.Sql && type != OutputType.None)
+                //    content = content.Insert(0, "-- ");
+                //RtxResult.Select(RtxResult.Text.LastIndexOf("\n") + 1, RtxResult.Text.Length - RtxResult.Text.LastIndexOf("\n"));
+                //RtxResult.SelectedText = content;
+                //RtxResult.Focus();
+                ////System.Threading.Thread.Sleep(10);
+                ////File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
+                //RtxResult.ScrollToCaret();
                 return true;
                 return false;
             }
@@ -591,6 +765,9 @@ namespace DBUp_Mysql
                 return false;
             }
         }
+
+
+
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             helper?.Close();
@@ -603,6 +780,7 @@ namespace DBUp_Mysql
         public void StartTh()
         {
             t = new System.Threading.Thread(Start);
+            t.IsBackground = true;     
             t.Start();
             this.btnTh.Visible = true;
             this.btnTh.Text = "暂停";
@@ -610,7 +788,8 @@ namespace DBUp_Mysql
         public void AbortTh()
         {
             this.btnTh.Visible = false;
-            t?.Abort();
+            if (t?.ThreadState != System.Threading.ThreadState.Stopped)
+                t?.Abort();
         }
         public void SuspendTh()
         {
@@ -633,6 +812,12 @@ namespace DBUp_Mysql
             {
                 ResumeTh();
             }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            // 彻底的退出
+            Environment.Exit(0);
         }
     }
 
