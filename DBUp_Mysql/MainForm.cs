@@ -97,6 +97,8 @@ namespace DBUp_Mysql
         System.Threading.Thread t = null;
         private void btnCompare_Click(object sender, EventArgs e)
         {
+            oldConnString = System.Configuration.ConfigurationManager.ConnectionStrings["old"].ConnectionString;
+            newConnString = System.Configuration.ConfigurationManager.ConnectionStrings["new"].ConnectionString;
             //从配置文件加载Setting
             if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
             {
@@ -224,6 +226,10 @@ namespace DBUp_Mysql
             }
 
             File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
+
+
+            //这里比较数据库的sqlmode
+            new CompareAndShowResultHelperBase().ShowDbDiff(oldConnString, newConnString);
 
 
             //var c = new CompareAndShowResultHelperFactory();

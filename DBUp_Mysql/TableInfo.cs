@@ -14,7 +14,7 @@ namespace DBUp_Mysql
     /// <summary>
     /// 一张数据库表格的信息
     /// </summary>
-    public class TableInfo: DBInfo
+    public class TableInfo : DBInfo
     {
         // Schema名
         public string SchemaName { get; set; }
@@ -67,7 +67,7 @@ namespace DBUp_Mysql
     /// <summary>
     /// 视图信息
     /// </summary>
-    public class ViewInfo: DBInfo
+    public class ViewInfo : DBInfo
     {
         /// <summary>
         /// 创建语句
@@ -85,7 +85,7 @@ namespace DBUp_Mysql
     /// <summary>
     /// 函数 存储过程 信息
     /// </summary>
-    public class Function: DBInfo
+    public class Function : DBInfo
     {
         /// <summary>
         /// 类型
@@ -139,7 +139,7 @@ namespace DBUp_Mysql
     /// <summary>
     /// 触发器
     /// </summary>
-    public class Trigger: DBInfo
+    public class Trigger : DBInfo
     {
         [JsonConverter(typeof(StringEnumConverter))]
         public TriggerEvent Event { get; set; }
@@ -188,5 +188,17 @@ namespace DBUp_Mysql
         Trig,
         Proc,
         Func
+    }
+
+
+    /// <summary>
+    /// 数据库全局信息
+    /// </summary>
+    public class DbModel
+    {
+        /// <summary>
+        /// SqlMode
+        /// </summary>
+        public string SqlMode { get; set; }
     }
 }

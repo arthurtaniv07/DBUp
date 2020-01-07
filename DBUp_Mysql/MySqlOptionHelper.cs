@@ -36,13 +36,16 @@ namespace DBUp_Mysql
                 return Conn.DataSource;
             }
         }
+        private string _port = null;
+             
         public string Port
         {
             get
             {
+                if (!string.IsNullOrWhiteSpace(_port))
+                    return _port;
                 try
                 {
-
                     Conn.Open();
                     if (Conn.State == ConnectionState.Open)
                     {
@@ -50,22 +53,22 @@ namespace DBUp_Mysql
                         MySqlCommand cmd = new MySqlCommand("show global variables like 'port';", Conn);
                         DataTable dtColumnInfo = _ExecuteSqlCommand(cmd);
                         if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
-                        {
-                            return dtColumnInfo.Rows[0][1] + "";
-                        }
-                        return "0";
+                            _port = dtColumnInfo.Rows[0][1] + "";
+                        else
+                            _port = "0";
                     }
                 }
                 catch (Exception)
                 {
+                    _port = "-1";
                 }
                 finally
                 {
                     if (Conn.State == ConnectionState.Open)
                         Conn.Close();
                 }
-                return "-1";
-                
+                return _port;
+
             }
         }
 
@@ -119,6 +122,17 @@ namespace DBUp_Mysql
             DataTable dt = new DataTable();
             da.Fill(dt);
             return dt;
+        }
+
+        private const string _SELECT_DBMODE_SQL = "select @@global.sql_mode;";
+        public DbModel GetDbInfo()
+        {
+            DbModel rel = new DbModel();
+
+            MySqlCommand cmd = new MySqlCommand(_SELECT_DBMODE_SQL, Conn);
+            DataTable dt = _ExecuteSqlCommand(cmd);
+            rel.SqlMode = dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
+            return rel;
         }
 
         #region 表
@@ -617,14 +631,19 @@ namespace DBUp_Mysql
         }
 
 
-        private const string _DROP_FUNC_SQL = "DROP FUNCTION `{0}`;\n";
+        private const string _DROP_FUNC_SQL = "DROP FUNCTION `{0}`;\r\n";
         public string GetDropFuncSql(string viewName)
         {
             return string.Format(_DROP_FUNC_SQL, viewName);
         }
-        private const string _ADD_FUNC_SQL = "{0}\n";
-        public string GetAddFuncSql(string sql)
+        private const string _ADD_FUNC_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
+        public string GetAddFuncSql(Function model)
         {
+            string sql = model.Info.CreateSQL;
+            if (sql.IndexOf("CREATE DEFINER=") > -1 && sql.IndexOf("FUNCTION") > 0)
+            {
+                sql = "CREATE " + sql.Substring(sql.IndexOf("FUNCTION"));
+            }
             return string.Format(_ADD_FUNC_SQL, sql);
         }
 
@@ -733,9 +752,14 @@ namespace DBUp_Mysql
         {
             return string.Format(_DROP_PROCS_SQL, viewName);
         }
-        private const string _ADD_PROCS_SQL = "{0}\n";
-        public string GetAddProcsSql(string sql)
+        private const string _ADD_PROCS_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
+        public string GetAddProcsSql(Function model)
         {
+            string sql = model.Info.CreateSQL;
+            if (sql.IndexOf("CREATE DEFINER=") > -1 && sql.IndexOf("PROCEDURE") > 0)
+            {
+                sql = "CREATE " + sql.Substring(sql.IndexOf("PROCEDURE"));
+            }
             return string.Format(_ADD_PROCS_SQL, sql);
         }
 
