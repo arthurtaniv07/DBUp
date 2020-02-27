@@ -105,22 +105,23 @@ namespace DBUp_Mysql
         /// <summary>
         /// 将List中的所有数据用指定分隔符连接为一个新字符串
         /// </summary>
-        public string CombineString(IList<string> list, string separateString)
+        public string JoinString(IList<string> list, string separateString)
         {
             if (list == null || list.Count < 1)
                 return null;
             else
             {
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < list.Count; ++i)
-                    builder.Append(list[i]).Append(separateString);
+                //StringBuilder builder = new StringBuilder();
+                //for (int i = 0; i < list.Count; ++i)
+                //    builder.Append(list[i]).Append(separateString);
 
-                string result = builder.ToString();
-                // 去掉最后多加的一次分隔符
-                if (separateString != null)
-                    return result.Substring(0, result.Length - separateString.Length);
-                else
-                    return result;
+                //string result = builder.ToString();
+                //// 去掉最后多加的一次分隔符
+                //if (separateString != null)
+                //    return result.Substring(0, result.Length - separateString.Length);
+                //else
+                //    return result;
+                return string.Join(separateString, list);
             }
         }
 
@@ -168,7 +169,7 @@ namespace DBUp_Mysql
             {
                 if (Helper.Open())
                 {
-                    OutputText?.Invoke("开始获取数据库表结构(" + Helper.DbName + ")\n", OutputType.Comment);
+                    OutputText?.Invoke("开始获取数据库表结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
                     Helper.Set_DbHander(SetLen);
                     if (Helper.GetTables(out List<string> tempList, out string errorMsg))
                     {
@@ -223,15 +224,10 @@ namespace DBUp_Mysql
             if (dropTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中删除以下表格：{0}\n", CombineString(dropTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中删除以下表格：{0}\n", JoinString(dropTableNames, ",")), OutputType.Comment);
                 foreach (string tableName in dropTableNames)
                 {
                     OutputText(string.Format("生成删除{0}表的SQL\n", tableName), OutputType.Comment);
-                    //if (AppValues.AllTableCompareRule.ContainsKey(tableName) && AppValues.AllTableCompareRule[tableName].CompareWay == TableCompareWays.Ignore)
-                    //{
-                    //    str.Add(new Tuple<string, OutputType>("该表格配置为忽略比较，故不进行删除\n", OutputType.Warning);
-                    //    continue;
-                    //}
                     string dropTableSql = dHelper.GetDropTableSql( tableName);
                     OutputText(dropTableSql, OutputType.Sql);
                     OutputText("\n", OutputType.None);
@@ -247,7 +243,7 @@ namespace DBUp_Mysql
             if (addTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中新增以下表格：{0}\n", CombineString(addTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中新增以下表格：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment);
                 using (Helper = new MySqlOptionHelper(newConnStr))
                 {
                     foreach (string tableName in addTableNames)
@@ -272,8 +268,6 @@ namespace DBUp_Mysql
                     TableInfo oldTableInfo = oldItems[tableName];
 
                     // 进行表结构比较
-                    bool isPrimaryKeySame = true;
-                    //if (compareRule.CompareWay != TableCompareWays.Ignore)
 
                     // 找出删除列
                     List<string> dropColumnNames = new List<string>();
@@ -284,7 +278,7 @@ namespace DBUp_Mysql
                     }
                     if (dropColumnNames.Count > 0)
                     {
-                        AppendLine(string.Format("  新版本中删除以下列：{0}\n", CombineString(dropColumnNames, ",")), OutputType.Comment);
+                        AppendLine(string.Format("  新版本中删除以下列：{0}\n", JoinString(dropColumnNames, ",")), OutputType.Comment);
                         foreach (string columnName in dropColumnNames)
                         {
                             string dropColumnSql = dHelper.GetDropTableColumnSql(tableName, columnName);
@@ -299,37 +293,29 @@ namespace DBUp_Mysql
                         if (!oldTableInfo.AllColumnInfo.ContainsKey(columnName))
                             addColumnNames.Add(columnName);
                     }
-                    string addColumnNameString = CombineString(addColumnNames, ",");
                     if (addColumnNames.Count > 0)
                     {
-                        AppendLine(string.Format("  新版本中新增以下列：{0}\n", CombineString(addColumnNames, ",")), OutputType.Comment);
+                        AppendLine(string.Format("  新版本中新增以下列：{0}\n", JoinString(addColumnNames, ",")), OutputType.Comment);
                         foreach (string columnName in addColumnNames)
                         {
                             string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName]);
                             AppendLine(addColumnSql, OutputType.Sql);
                         }
+                        //新增列后再修改顺序
+                        foreach (var item in newTableInfo.AllColumnInfo)
+                        {
+
+                        }
                     }
 
                     // 在改变列属性前需先同步索引设置，因为自增属性仅可用于设置了索引的列
                     // 找出主键修改
-                    isPrimaryKeySame = true;
-                    if (newTableInfo.PrimaryKeyColumnNames.Count != oldTableInfo.PrimaryKeyColumnNames.Count)
-                        isPrimaryKeySame = false;
-                    else
-                    {
-                        foreach (string primaryKey in newTableInfo.PrimaryKeyColumnNames)
-                        {
-                            if (!oldTableInfo.PrimaryKeyColumnNames.Contains(primaryKey))
-                            {
-                                isPrimaryKeySame = false;
-                                break;
-                            }
-                        }
-                    }
+                    bool isPrimaryKeySame = newTableInfo.PrimaryKeyColumnNames.Count == oldTableInfo.PrimaryKeyColumnNames.Count && newTableInfo.PrimaryKeyColumnNames.Any(i => oldTableInfo.PrimaryKeyColumnNames.Contains(i));
+
                     if (isPrimaryKeySame == false)
                     {
-                        string newPrimaryKeyString = newTableInfo.PrimaryKeyColumnNames.Count > 0 ? CombineString(newTableInfo.PrimaryKeyColumnNames, ",") : "无";
-                        string oldPrimaryKeyString = oldTableInfo.PrimaryKeyColumnNames.Count > 0 ? CombineString(oldTableInfo.PrimaryKeyColumnNames, ",") : "无";
+                        string newPrimaryKeyString = newTableInfo.PrimaryKeyColumnNames.Count > 0 ? JoinString(newTableInfo.PrimaryKeyColumnNames, ",") : "无";
+                        string oldPrimaryKeyString = oldTableInfo.PrimaryKeyColumnNames.Count > 0 ? JoinString(oldTableInfo.PrimaryKeyColumnNames, ",") : "无";
                         AppendLine(string.Format("  主键：{0} => {1}\n", oldPrimaryKeyString, newPrimaryKeyString), OutputType.Comment);
                         // 先删除原有的主键设置
                         string dropPrimaryKeySql = dHelper.GetDropPrimarySql(tableName);
@@ -349,7 +335,7 @@ namespace DBUp_Mysql
                     }
                     if (dropIndexNames.Count > 0)
                     {
-                        AppendLine(string.Format("  新版本中删除以下索引：{0}\n", CombineString(dropIndexNames, ",")), OutputType.Comment);
+                        AppendLine(string.Format("  新版本中删除以下索引：{0}\n", JoinString(dropIndexNames, ",")), OutputType.Comment);
                         foreach (string name in dropIndexNames)
                         {
                             string dropIndexSql = dHelper.GetDropIndexSql(tableName, name);
@@ -357,18 +343,18 @@ namespace DBUp_Mysql
                         }
                     }
                     // 找出新版本中新增索引
-                    List<string> addIndexNames = new List<string>();
+                    List<TableIndex> addIndexNames = new List<TableIndex>();
                     foreach (string name in newTableInfo.IndexInfo.Keys)
                     {
                         if (!oldTableInfo.IndexInfo.ContainsKey(name))
-                            addIndexNames.Add(name);
+                            addIndexNames.Add(newTableInfo.IndexInfo[name]);
                     }
                     if (addIndexNames.Count > 0)
                     {
-                        AppendLine(string.Format("  新版本中新增以下索引：{0}\n", CombineString(addIndexNames, ",")), OutputType.Comment);
-                        foreach (string name in addIndexNames)
+                        AppendLine(string.Format("  新版本中新增以下索引：{0}\n", JoinString(addIndexNames.Select(i => i.Name).ToList(), ",")), OutputType.Comment);
+                        foreach (TableIndex tabInx in addIndexNames)
                         {
-                            string addIndexSql = dHelper.GetAddUniqueSql(tableName, name, newTableInfo.IndexInfo[name].ToArray());
+                            string addIndexSql = dHelper.GetAddIndexSql(tableName, tabInx);
                             AppendLine(addIndexSql, OutputType.Sql);
                         }
                     }
@@ -378,32 +364,29 @@ namespace DBUp_Mysql
                         string name = pair.Key;
                         if (oldTableInfo.IndexInfo.ContainsKey(name))
                         {
-                            List<string> newIndexColumnInfo = pair.Value;
-                            List<string> oldIndexColumnInfo = oldTableInfo.IndexInfo[name];
-                            bool isIndexColumnSame = true;
-                            if (newIndexColumnInfo.Count != oldIndexColumnInfo.Count)
-                                isIndexColumnSame = false;
-                            else
-                            {
-                                int count = newIndexColumnInfo.Count;
-                                for (int i = 0; i < count; ++i)
-                                {
-                                    if (!newIndexColumnInfo[i].Equals(oldIndexColumnInfo[i]))
-                                    {
-                                        isIndexColumnSame = false;
-                                        break;
-                                    }
-                                }
-                            }
+                            TableIndex newIndex = pair.Value;
+                            TableIndex oldIndex = oldTableInfo.IndexInfo[name];
 
-                            if (isIndexColumnSame == false)
+                            bool isIndexColumnSame = newIndex.Columns.Count == oldIndex.Columns.Count && newIndex.Columns.Any(i => oldIndex.Columns.Contains(i));
+                            bool isIndexComment = setting.CheckCommon && (newIndex.Common ?? "") == (oldIndex.Common ?? "");
+
+                            if (isIndexColumnSame == false || newIndex.IndexFunc != oldIndex.IndexFunc ||
+                                newIndex.IndexType != oldIndex.IndexType || isIndexComment == false)
                             {
-                                AppendLine(string.Format("  新版本中名为{0}的索引，涉及的列名为{1}，而旧版本中为{2}\n", name, CombineString(newIndexColumnInfo, ","), CombineString(oldIndexColumnInfo, ",")), OutputType.Comment);
+                                AppendLine(string.Format("  名为{0}的索引：\n", name), OutputType.Comment);
+                                if (isIndexColumnSame == false)
+                                    AppendLine(string.Format("    涉及列名：{0} => {1}\n", JoinString(oldIndex.Columns, ","), JoinString(newIndex.Columns, ",")), OutputType.Comment);
+                                if (newIndex.IndexFunc != oldIndex.IndexFunc)
+                                    AppendLine(string.Format("    索引方法：{0} => {1}\n", oldIndex.IndexFunc + "", newIndex.IndexFunc + ""), OutputType.Comment);
+                                if (newIndex.IndexType != oldIndex.IndexType)
+                                    AppendLine(string.Format("    索引类型：{0} => {1}\n", oldIndex.IndexType + "", newIndex.IndexType + ""), OutputType.Comment);
+                                if (isIndexComment == false)
+                                    AppendLine(string.Format("    注释：{0} => {1}\n", oldIndex.Common, newIndex.Common), OutputType.Comment);
                                 // 先删除
-                                string dropIndexSql = dHelper.GetDropIndexSql(tableName, newIndexColumnInfo.ToArray());
+                                string dropIndexSql = dHelper.GetDropIndexSql(tableName, name);
                                 AppendLine(dropIndexSql, OutputType.Sql);
                                 // 再重新创建
-                                string addIndexSql = dHelper.GetAddUniqueSql(tableName, name, newIndexColumnInfo.ToArray());
+                                string addIndexSql = dHelper.GetAddIndexSql(tableName, newIndex);
                                 AppendLine(addIndexSql, OutputType.Sql);
                             }
                         }
@@ -456,9 +439,100 @@ namespace DBUp_Mysql
                     if (setting.CheckCommon && !newTableInfo.Comment.Equals(oldTableInfo.Comment))
                     {
                         AppendLine(string.Format("  注释：\"{0}\" => \"{1}\"\n", oldTableInfo.Comment, newTableInfo.Comment), OutputType.Comment);
-                        string alterTableComment = dHelper.GetChangeCollateSql(tableName, newTableInfo.Comment);
+                        string alterTableComment = dHelper.GetChangeCommentSql(tableName, newTableInfo.Comment);
                         AppendLine(alterTableComment, OutputType.Sql);
                     }
+
+
+                    // 对比表选项
+                    string alterTableOption;
+
+                    if (oldTableInfo.Option.Auto_Increment != newTableInfo.Option.Auto_Increment)
+                    {
+                        AppendLine(string.Format("  自动增加：{0} => {1}\n", oldTableInfo.Option.Auto_Increment, newTableInfo.Option.Auto_Increment), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Auto_Increment), oldTableInfo.Option.Auto_Increment);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.Avg_Row_Length != newTableInfo.Option.Avg_Row_Length)
+                    {
+                        AppendLine(string.Format("  平均记录长度：{0} => {1}\n", oldTableInfo.Option.Avg_Row_Length, newTableInfo.Option.Avg_Row_Length), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Avg_Row_Length), oldTableInfo.Option.Avg_Row_Length);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.Checksum != newTableInfo.Option.Checksum)
+                    {
+                        AppendLine(string.Format("  检查记录和：{0} => {1}\n", oldTableInfo.Option.Checksum, newTableInfo.Option.Checksum), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Checksum), oldTableInfo.Option.Checksum);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.COMPRESSION != newTableInfo.Option.COMPRESSION)
+                    {
+                        AppendLine(string.Format("  压缩方式：{0} => {1}\n", oldTableInfo.Option.COMPRESSION, newTableInfo.Option.COMPRESSION), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.COMPRESSION), oldTableInfo.Option.COMPRESSION);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.ENCRYPTION != newTableInfo.Option.ENCRYPTION)
+                    {
+                        AppendLine(string.Format("  加密：{0} => {1}\n", oldTableInfo.Option.ENCRYPTION, newTableInfo.Option.ENCRYPTION), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.ENCRYPTION), oldTableInfo.Option.ENCRYPTION);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.Engine != newTableInfo.Option.Engine)
+                    {
+                        AppendLine(string.Format("  引擎：{0} => {1}\n", oldTableInfo.Option.Engine, newTableInfo.Option.Engine), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Engine), oldTableInfo.Option.Engine);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.Max_Rows != newTableInfo.Option.Max_Rows)
+                    {
+                        AppendLine(string.Format("  最大记录行数：{0} => {1}\n", oldTableInfo.Option.Max_Rows, newTableInfo.Option.Max_Rows), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Max_Rows), oldTableInfo.Option.Max_Rows);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.Min_Rows != newTableInfo.Option.Min_Rows)
+                    {
+                        AppendLine(string.Format("  最小记录行数：{0} => {1}\n", oldTableInfo.Option.Min_Rows, newTableInfo.Option.Min_Rows), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Min_Rows), oldTableInfo.Option.Min_Rows);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.RowFormat != newTableInfo.Option.RowFormat)
+                    {
+                        AppendLine(string.Format("  记录格式：{0} => {1}\n", oldTableInfo.Option.RowFormat, newTableInfo.Option.RowFormat), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.RowFormat), oldTableInfo.Option.RowFormat);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.STATS_AUTO_RECALC != newTableInfo.Option.STATS_AUTO_RECALC)
+                    {
+                        AppendLine(string.Format("  累计数据自动重计：{0} => {1}\n", oldTableInfo.Option.STATS_AUTO_RECALC, newTableInfo.Option.STATS_AUTO_RECALC), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.STATS_AUTO_RECALC), oldTableInfo.Option.STATS_AUTO_RECALC);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.STATS_PERSISTENT != newTableInfo.Option.STATS_PERSISTENT)
+                    {
+                        AppendLine(string.Format("  统计数据持久：{0} => {1}\n", oldTableInfo.Option.STATS_PERSISTENT, newTableInfo.Option.STATS_PERSISTENT), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.STATS_PERSISTENT), oldTableInfo.Option.STATS_PERSISTENT);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+
+                    if (oldTableInfo.Option.TABLESPACE != newTableInfo.Option.TABLESPACE)
+                    {
+                        AppendLine(string.Format("  表空间：{0} => {1}\n", oldTableInfo.Option.TABLESPACE, newTableInfo.Option.TABLESPACE), OutputType.Comment);
+                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.TABLESPACE), oldTableInfo.Option.TABLESPACE);
+                        AppendLine(alterTableOption, OutputType.Sql);
+                    }
+                    
+
+
 
 
                     AppendLineToCtrl();
@@ -481,7 +555,7 @@ namespace DBUp_Mysql
             {
                 if (Helper.Open())
                 {
-                    OutputText("开始获取数据库视图结构(" + Helper.DbName + ")\n", OutputType.Comment);
+                    OutputText("开始获取数据库视图结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
                     Helper.Set_DbHander(SetLen);
                     if (Helper.GetViews(out List<string> tempTrig, out string errorMsg))
                     {
@@ -538,7 +612,7 @@ namespace DBUp_Mysql
             if (dropTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中删除以下视图：{0}\n", CombineString(dropTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中删除以下视图：{0}\n", JoinString(dropTableNames, ",")), OutputType.Comment);
                 foreach (var viewName in dropTableNames)
                 {
                     string dropViewSql = dHelper.GetDropViewSql(viewName);
@@ -555,7 +629,7 @@ namespace DBUp_Mysql
             if (addTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中新增以下视图：{0}\n", CombineString(addTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中新增以下视图：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment);
                 foreach (var viewName in addTableNames)
                 {
                     OutputText(string.Format("生成创建{0}视图的SQL\n", viewName), OutputType.Comment);
@@ -614,7 +688,7 @@ namespace DBUp_Mysql
             {
                 if (Helper.Open())
                 {
-                    OutputText("开始获取数据库触发器结构(" + Helper.DbName + ")\n", OutputType.Comment);
+                    OutputText("开始获取数据库触发器结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
                     Helper.Set_DbHander(SetLen);
                     if (Helper.GetTris(out List<Trigger> tempTrig, out string errorMsg))
                     {
@@ -671,7 +745,7 @@ namespace DBUp_Mysql
             if (dropTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中删除以下触发器：{0}\n", CombineString(dropTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中删除以下触发器：{0}\n", JoinString(dropTableNames, ",")), OutputType.Comment);
                 foreach (var viewName in dropTableNames)
                 {
                     string dropViewSql = dHelper.GetDropTrisSql(viewName);
@@ -688,7 +762,7 @@ namespace DBUp_Mysql
             if (addTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中新增以下触发器：{0}\n", CombineString(addTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中新增以下触发器：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment);
                 foreach (var viewName in addTableNames)
                 {
                     OutputText(string.Format("生成创建{0}触发器的SQL\n", viewName), OutputType.Comment);
@@ -765,7 +839,7 @@ namespace DBUp_Mysql
                 Helper.Set_DbHander(SetLen);
                 if (Helper.Open())
                 {
-                    OutputText("开始获取数据库函数结构(" + Helper.DbName + ")\n", OutputType.Comment);
+                    OutputText("开始获取数据库函数结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
                     bool tempBool = true;
                     string spName2 = "";
                     if (isFun)
@@ -840,7 +914,7 @@ namespace DBUp_Mysql
             if (dropTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中删除以下" + temp + "：{0}\n", CombineString(dropTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中删除以下" + temp + "：{0}\n", JoinString(dropTableNames, ",")), OutputType.Comment);
                 if (isFun)
                 {
                     foreach (var viewName in dropTableNames)
@@ -868,7 +942,7 @@ namespace DBUp_Mysql
             if (addTableNames.Count > 0)
             {
                 OutputText("==============================================\n", OutputType.Comment);
-                OutputText(string.Format("新版本数据库中新增以下" + temp + "：{0}\n", CombineString(addTableNames, ",")), OutputType.Comment);
+                OutputText(string.Format("新版本数据库中新增以下" + temp + "：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment);
                 if (isFun)
                 {
                     foreach (var viewName in addTableNames)

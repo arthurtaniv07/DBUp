@@ -38,3 +38,5 @@ D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CoreCompileInputs.cach
 D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.csproj.CopyComplete
 D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.exe
 D:\GitProject\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.pdb
+E:\WorkSpace\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.MDI.resources
+E:\WorkSpace\DBUp\DBUp_Mysql\obj\Debug\DBUp_Mysql.ReleaseCode.resources

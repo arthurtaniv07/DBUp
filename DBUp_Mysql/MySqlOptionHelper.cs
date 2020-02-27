@@ -46,10 +46,11 @@ namespace DBUp_Mysql
                     return _port;
                 try
                 {
-                    Conn.Open();
+                    if(Conn.State == ConnectionState.Closed)
+                        Conn.Open();
                     if (Conn.State == ConnectionState.Open)
                     {
-                        // 列信息
+                        // 查询端口
                         MySqlCommand cmd = new MySqlCommand("show global variables like 'port';", Conn);
                         DataTable dtColumnInfo = _ExecuteSqlCommand(cmd);
                         if (dtColumnInfo != null && dtColumnInfo.Rows.Count > 0)
@@ -149,6 +150,9 @@ namespace DBUp_Mysql
             existTableNames = new List<string>();
             try
             {
+                //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
+                if (Conn.State == ConnectionState.Closed)
+                    Conn.Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -191,6 +195,90 @@ namespace DBUp_Mysql
             tableInfo.Collation = _GetTableProperty(tableName, "TABLE_COLLATION");
             // 索引设置
             tableInfo.IndexInfo = _GetIndexInfo(tableName);
+
+            //选项
+            tableInfo.Option = new TableOption();
+            DataTable dt = _GetTableProperty(tableName);
+            if (dt?.Rows.Count > 0)
+            {
+                DataRow firRow = dt.Rows[0];
+                int temp_int;
+                string temp;
+
+                temp = firRow["AUTO_INCREMENT"] + "";
+                if (int.TryParse(temp, out temp_int))
+                    tableInfo.Option.Auto_Increment = temp_int;
+
+                temp = firRow["AVG_ROW_LENGTH"] + "";
+                if (int.TryParse(temp, out temp_int))
+                    tableInfo.Option.Avg_Row_Length = temp_int;
+
+                temp = firRow["CHECKSUM"] + "";
+                if (int.TryParse(temp, out temp_int))
+                    tableInfo.Option.Checksum = (TableChecksum)Enum.ToObject(typeof(TableChecksum), temp_int);
+
+                temp = firRow["TABLE_COLLATION"] + "";
+                tableInfo.Option.Collate = temp;
+
+                temp = firRow["ENGINE"] + "";
+                if (!string.IsNullOrWhiteSpace(temp))
+                    tableInfo.Option.Engine = (TableEngine)Enum.Parse(typeof(TableEngine), temp, true);
+
+                temp = firRow["Create_Options"] + "";
+
+                if (!string.IsNullOrWhiteSpace(temp))
+                {
+                    //min_rows=3 max_rows=2 avg_row_length=1 stats_persistent=0 stats_auto_recalc=1 COMPRESSION="ZLIB" ENCRYPTION = 'Y'
+                    /* min_rows 最小行
+                     * max_rows 最大行
+                     * stats_persistent 统计数据持久 null 0 1 default
+                     * stats_auto_recalc 统计数据自动重计 null 0 1 default
+                     * COMPRESSION 压缩方式  LZ4 NONE ZLIB
+                     * ENCRYPTION 加密
+                     * 
+                     * ALTER TABLE `test_up`.`test` COMPRESSION = 'LZ4', ENCRYPTION = 'Y', STATS_PERSISTENT = DEFAULT;
+                     */
+                    foreach (var item in temp.Split(' '))
+                    {
+                        if (!item.Contains("="))
+                            continue;
+                        string[] itemArr = item.Split('=').Select(i => i.Trim()).ToArray();
+                        temp = itemArr[1];
+                        switch (itemArr[0].ToLower())
+                        {
+                            case "min_rows":
+                                if (int.TryParse(temp, out temp_int))
+                                    tableInfo.Option.Min_Rows = temp_int;
+                                break;
+                            case "max_rows":
+                                if (int.TryParse(temp, out temp_int))
+                                    tableInfo.Option.Max_Rows = temp_int;
+                                break;
+                            case "stats_persistent":
+                                tableInfo.Option.STATS_PERSISTENT = temp;
+                                break;
+                            case "stats_auto_recalc":
+                                tableInfo.Option.STATS_AUTO_RECALC = temp;
+                                break;
+                            case "compression":
+                                if(!string.IsNullOrWhiteSpace(temp))
+                                    tableInfo.Option.COMPRESSION = temp;
+                                break;
+                            case "encryption":
+                                if(!string.IsNullOrWhiteSpace(temp))
+                                    tableInfo.Option.ENCRYPTION = temp;
+                                break;
+                            case "tablespace":
+                                if(!string.IsNullOrWhiteSpace(temp))
+                                    tableInfo.Option.TABLESPACE = temp;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+
             // 列信息
             DataTable dtColumnInfo = _GetAllColumnInfo(tableName);
             if (dtColumnInfo != null)
@@ -252,43 +340,61 @@ namespace DBUp_Mysql
             DataTable dt = _ExecuteSqlCommand(cmd);
             return dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
         }
-        private const string _SHOW_INDEX_SQL = "SHOW INDEX FROM {0} WHERE Key_name != 'PRIMARY' AND Index_type = 'BTREE';";
+        /// <summary>
+        /// 获取某张表的某个属性
+        /// </summary>
+        private DataTable _GetTableProperty(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TABLE_INFO_SQL, "*", _SchemaName, tableName), Conn);
+            DataTable dt = _ExecuteSqlCommand(cmd);
+            return dt;
+        }
+        private const string _SHOW_INDEX_SQL = "SHOW INDEX FROM {0} WHERE Key_name != 'PRIMARY';";
         /// <summary>
         /// 获取某表格的索引设置
         /// </summary>
-        private Dictionary<string, List<string>> _GetIndexInfo(string tableName)
+        private Dictionary<string, TableIndex> _GetIndexInfo(string tableName)
         {
-            Dictionary<string, List<string>> indexInfo = new Dictionary<string, List<string>>();
+            Dictionary<string, TableIndex> indexInfo = new Dictionary<string, TableIndex>();
 
             // MySQL的SHOW INDEX语句中无法使用ORDER BY，而List中没有前面的元素就无法在后面指定下标处插入数据，故用下面的数据结构进行整理，其中内层Dictionary的key为序号，value为列名
             Dictionary<string, Dictionary<int, string>> tempIndexInfo = new Dictionary<string, Dictionary<int, string>>();
 
             MySqlCommand cmd = new MySqlCommand(string.Format(_SHOW_INDEX_SQL, _SchemaTabName(tableName)), Conn);
             DataTable dt = _ExecuteSqlCommand(cmd);
-
+            TableIndex temp;
             int count = dt.Rows.Count;
             for (int i = 0; i < count; ++i)
             {
                 string name = dt.Rows[i]["Key_name"].ToString();
                 string columnName = dt.Rows[i]["Column_name"].ToString();
+                int Non_unique = int.Parse(dt.Rows[i]["Non_unique"].ToString());
                 int seq = int.Parse(dt.Rows[i]["Seq_in_index"].ToString());
-                if (!tempIndexInfo.ContainsKey(name))
-                    tempIndexInfo.Add(name, new Dictionary<int, string>());
-
-                Dictionary<int, string> tempColumnNames = tempIndexInfo[name];
-                tempColumnNames.Add(seq, columnName);
+                string Collation = dt.Rows[i]["Collation"].ToString();
+                string Index_type = dt.Rows[i]["Index_type"].ToString();
+                if (!indexInfo.ContainsKey(name))
+                {
+                    indexInfo.Add(name, new TableIndex() { Columns = new List<string>(), Name = name });
+                }
+                temp = indexInfo[name];
+                temp.Columns.Add(columnName);
+                //temp.IndexType = (IndexType)Enum.Parse(typeof(IndexType), Index_type, true);
+                if (Index_type == "FULLTEXT")
+                {
+                    temp.IndexType = IndexType.Fulltext;
+                    temp.IndexFunc = null;
+                }
+                else
+                {
+                    temp.IndexFunc = (IndexFunction)Enum.Parse(typeof(IndexFunction), Index_type, true);
+                }
+                if (Non_unique == 0)
+                {
+                    temp.IndexType = IndexType.Unique;
+                }
             }
 
-            // 转为Dictionary<string, List<string>>数据结构
-            foreach (var pair in tempIndexInfo)
-            {
-                string name = pair.Key;
-                indexInfo.Add(name, new List<string>());
-                List<string> columnNames = indexInfo[name];
-                int columnCount = pair.Value.Count;
-                for (int seq = 1; seq <= columnCount; ++seq)
-                    columnNames.Add(pair.Value[seq]);
-            }
+            
 
             return indexInfo;
         }
@@ -314,6 +420,7 @@ namespace DBUp_Mysql
                 return "NULL";
             else if (value.GetType() == typeof(System.Boolean))
             {
+                //这里为什么bool类型的默认值不进判断 待查
                 if ((bool)value == true)
                     return "\"1\"";
                 else
@@ -321,7 +428,17 @@ namespace DBUp_Mysql
             }
             // MySQL中string类型的空字符串，若用单引号包裹则认为是NULL，用双引号包裹才认为是空字符串。还要注意转义数据中的引号
             else
+            {
+                if ((value + "").ToLower().StartsWith("b'"))
+                {
+                    return value + "";
+                }
+                if ((value + "").ToUpper().Equals("CURRENT_TIMESTAMP"))
+                {
+                    return value + "";
+                }
                 return string.Concat("\"", value.ToString().Replace("\"", "\\\""), "\"");
+            }
         }
 
 
@@ -408,18 +525,25 @@ namespace DBUp_Mysql
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_INDEX_SQL, "`" + string.Join("`,`", indexDefine) + "`"));
         }
-        private const string _ADD_UNIQUE_INDEX_SQL = "ADD UNIQUE INDEX `{0}` ({1});\n";
+        private const string _ADD_INDEX_SQL = "ADD{0} INDEX `{1}`({2}) {3} COMMENT '{4}';\n";
         /// <summary>
-        /// 获取添加唯一索引的SQL
+        /// 获取添加索引的SQL
         /// </summary>
-        public string GetAddUniqueSql(string tableName,string inxName, params string[] columnNames)
+        public string GetAddIndexSql(string tableName, TableIndex tableIndex)
         {
             List<string> columnDefine = new List<string>();
             // 根据新增索引属性生成添加新索引的SQL
             // 注意列名后必须声明排序方式，MySQL只支持索引的升序排列
-            foreach (string columnName in columnNames)
+            foreach (string columnName in tableIndex.Columns)
                 columnDefine.Add(string.Format("`{0}` ASC", columnName));
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_UNIQUE_INDEX_SQL, inxName, string.Join(",", columnDefine)));
+            string indexType = "";
+            if (tableIndex.IndexType != IndexType.Normal)
+                indexType = " " + tableIndex.IndexType.ToString().ToUpper();
+            string indexFun = "";
+            if (tableIndex.IndexFunc.HasValue)
+                indexFun = "USING " + tableIndex.IndexFunc.ToString().ToUpper();
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
+                string.Format(_ADD_INDEX_SQL, indexType, tableIndex.Name, string.Join(",", columnDefine), indexFun, tableIndex.Common));
         }
 
         private const string _ALTER_TABLE_COLLATION_SQL = "COLLATE = {0};\n";
@@ -432,11 +556,35 @@ namespace DBUp_Mysql
         }
         private const string _ALTER_TABLE_COMMENT_SQL = "COMMENT = '{0}';\n";
         /// <summary>
-        /// 获取修改表校对集的SQL
+        /// 获取修改表注释
         /// </summary>
         public string GetChangeCommentSql(string tableName, string comment)
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ALTER_TABLE_COMMENT_SQL, comment));
+        }
+        /// <summary>
+        /// 获取修改表选项
+        /// </summary>
+        public string GetChangeOptionSql(string tableName, string fieldName, dynamic value)
+        {
+            return "";
+            string str;
+            string splitStr = "";
+            switch (fieldName.ToLower())
+            {
+                case "tablespace":
+                    splitStr = "`";
+                    break;
+                case "encryption":
+                case "compression":
+                    splitStr = "'";
+                    break;
+                default:
+                    break;
+            }
+
+            str = fieldName.ToUpper() + "=" + splitStr + value + splitStr;
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), str);
         }
         #endregion
         private const string _DROP_DATA_SQL = "DELETE FROM {0} WHERE {1};\n";
@@ -458,6 +606,9 @@ namespace DBUp_Mysql
             existViewNames = new List<string>();
             try
             {
+                //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
+                if (Conn.State == ConnectionState.Closed)
+                    Conn.Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -548,6 +699,9 @@ namespace DBUp_Mysql
             list = new List<Function>();
             try
             {
+                //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
+                if (Conn.State == ConnectionState.Closed)
+                    Conn.Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -663,6 +817,9 @@ namespace DBUp_Mysql
             list = new List<Function>();
             try
             {
+                //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
+                if (Conn.State == ConnectionState.Closed)
+                    Conn.Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -779,6 +936,9 @@ namespace DBUp_Mysql
             list = new List<Trigger>();
             try
             {
+                //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
+                if (Conn.State == ConnectionState.Closed)
+                    Conn.Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名

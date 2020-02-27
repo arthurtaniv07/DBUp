@@ -56,6 +56,19 @@
     <Compile Include="CompareAndShowResultHelper.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="DBConnection.cs" />
+    <Compile Include="FormTools.cs" />
+    <Compile Include="ReleaseCode.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ReleaseCode.Designer.cs">
+      <DependentUpon>ReleaseCode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MDI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MDI.Designer.cs">
+      <DependentUpon>MDI.cs</DependentUpon>
+    </Compile>
     <Compile Include="PathSessing.cs" />
     <Compile Include="Setting.cs" />
     <Compile Include="MainForm.cs">
@@ -70,6 +83,12 @@
     <Compile Include="StOs.cs" />
     <Compile Include="TableInfo.cs" />
     <Compile Include="Tools.cs" />
+    <EmbeddedResource Include="ReleaseCode.resx">
+      <DependentUpon>ReleaseCode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MDI.resx">
+      <DependentUpon>MDI.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

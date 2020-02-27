@@ -73,6 +73,7 @@
             // 
             // lblTotalTime
             // 
+            this.lblTotalTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lblTotalTime.AutoSize = true;
             this.lblTotalTime.Location = new System.Drawing.Point(12, 364);
             this.lblTotalTime.Name = "lblTotalTime";
@@ -84,8 +85,7 @@
             // 
             // btnTh
             // 
-            this.btnTh.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnTh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnTh.Location = new System.Drawing.Point(517, 10);
             this.btnTh.Name = "btnTh";
             this.btnTh.Size = new System.Drawing.Size(71, 28);
@@ -97,6 +97,7 @@
             // 
             // linkLabel1
             // 
+            this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.linkLabel1.AutoSize = true;
             this.linkLabel1.Location = new System.Drawing.Point(209, 364);
             this.linkLabel1.Name = "linkLabel1";
