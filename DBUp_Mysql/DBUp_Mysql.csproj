@@ -43,6 +43,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,6 +55,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompareAndShowResultHelper.cs" />
+    <Compile Include="StMailHelper.cs" />
+    <Compile Include="ConfigHelper.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="DBConnection.cs" />
     <Compile Include="FormTools.cs" />

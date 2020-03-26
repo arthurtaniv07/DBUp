@@ -212,6 +212,7 @@ namespace DBUp_Mysql
                     //St.StStack stExceptionStack = new St.StStack(0);
                     //string content = stExceptionStack.ToString();
                     string content = e.ToString();
+                    //StMailHelper.CheckSend("1578403183@qq.com", "DBUp_MySql", "程序出错", content.Replace("\r\n", "<br />"));
                     content = content.Insert(0, string.Format("---------------{0}---------------", DateTime.Now.ToString()));
                     string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}-Error.txt", DateTime.Now.ToString("yyyyMMdd"));
 
