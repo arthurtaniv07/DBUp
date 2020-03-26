@@ -311,6 +311,7 @@ namespace DBUp_Mysql
                     // 在改变列属性前需先同步索引设置，因为自增属性仅可用于设置了索引的列
                     // 找出主键修改
                     bool isPrimaryKeySame = newTableInfo.PrimaryKeyColumnNames.Count == oldTableInfo.PrimaryKeyColumnNames.Count && newTableInfo.PrimaryKeyColumnNames.Any(i => oldTableInfo.PrimaryKeyColumnNames.Contains(i));
+                    isPrimaryKeySame &= newTableInfo.PrimaryKeyColumnNames.Count > 0 || oldTableInfo.PrimaryKeyColumnNames.Count > 0;
 
                     if (isPrimaryKeySame == false)
                     {
@@ -368,7 +369,7 @@ namespace DBUp_Mysql
                             TableIndex oldIndex = oldTableInfo.IndexInfo[name];
 
                             bool isIndexColumnSame = newIndex.Columns.Count == oldIndex.Columns.Count && newIndex.Columns.Any(i => oldIndex.Columns.Contains(i));
-                            bool isIndexComment = setting.CheckCommon && (newIndex.Common ?? "") == (oldIndex.Common ?? "");
+                            bool isIndexComment = (newIndex.Common ?? "") == (oldIndex.Common ?? "");
 
                             if (isIndexColumnSame == false || newIndex.IndexFunc != oldIndex.IndexFunc ||
                                 newIndex.IndexType != oldIndex.IndexType || isIndexComment == false)
@@ -380,7 +381,7 @@ namespace DBUp_Mysql
                                     AppendLine(string.Format("    索引方法：{0} => {1}\n", oldIndex.IndexFunc + "", newIndex.IndexFunc + ""), OutputType.Comment);
                                 if (newIndex.IndexType != oldIndex.IndexType)
                                     AppendLine(string.Format("    索引类型：{0} => {1}\n", oldIndex.IndexType + "", newIndex.IndexType + ""), OutputType.Comment);
-                                if (isIndexComment == false)
+                                if (setting.CheckCommon && isIndexComment == false)
                                     AppendLine(string.Format("    注释：{0} => {1}\n", oldIndex.Common, newIndex.Common), OutputType.Comment);
                                 // 先删除
                                 string dropIndexSql = dHelper.GetDropIndexSql(tableName, name);
@@ -992,8 +993,17 @@ namespace DBUp_Mysql
                     //    AppendLine(string.Format("  SQLModel：\"{0}\" => \"{1}\"\n", oldTableInfo.Info.SQLModel, newTableInfo.Info.SQLModel), OutputType.Comment);
                     //}
                     //避免DEFINER 和注释产生影响
-                    string oldSql = oldTableInfo.Info.CreateSQL.Replace("`" + oldTableInfo.Definer + "`", "").Replace("COMMENT '" + oldTableInfo.Comment + "'", "COMMENT '" + newTableInfo.Comment + "'");
-                    string newSql = newTableInfo.Info.CreateSQL.Replace("`" + newTableInfo.Definer + "`", "");
+                    var flagTypeStr = isFun ? "FUNCTION" : "PROCEDURE";
+                    string oldSql = oldTableInfo.Info.CreateSQL;
+                    if (oldSql.IndexOf("CREATE DEFINER=") > -1 && oldSql.IndexOf(flagTypeStr) > 0)
+                    {
+                        oldSql = "CREATE " + oldSql.Substring(oldSql.IndexOf(flagTypeStr));
+                    }
+                    string newSql = newTableInfo.Info.CreateSQL;
+                    if (newSql.IndexOf("CREATE DEFINER=") > -1 && newSql.IndexOf(flagTypeStr) > 0)
+                    {
+                        newSql = "CREATE " + newSql.Substring(newSql.IndexOf(flagTypeStr));
+                    }
                     if (!oldSql.Equals(newSql))
                     {
                         AppendLine("  " + temp + "内容有变化\n", OutputType.Comment);

@@ -790,7 +790,7 @@ namespace DBUp_Mysql
         {
             return string.Format(_DROP_FUNC_SQL, viewName);
         }
-        private const string _ADD_FUNC_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
+        private const string _ADD_FUNC_SQL = "DELIMITER $$\r\n{0}$$\r\n";
         public string GetAddFuncSql(Function model)
         {
             string sql = model.Info.CreateSQL;
@@ -909,7 +909,7 @@ namespace DBUp_Mysql
         {
             return string.Format(_DROP_PROCS_SQL, viewName);
         }
-        private const string _ADD_PROCS_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
+        private const string _ADD_PROCS_SQL = "DELIMITER $$\r\n{0}$$\r\n";
         public string GetAddProcsSql(Function model)
         {
             string sql = model.Info.CreateSQL;
@@ -997,10 +997,12 @@ namespace DBUp_Mysql
         {
             return string.Format(_DROP_TRIS_SQL, viewName);
         }
-        private const string _ADD_TRIS_SQL = @"CREATE TRIGGER {0} 
+        private const string _ADD_TRIS_SQL = @"DELIMITER $$
+CREATE TRIGGER {0} 
     {1} {2} on {3} 
     FOR EACH ROW 
-{4}\n";
+{4}$$
+";
         public string GetAddTrisSql(Trigger model)
         {
             return string.Format(_ADD_TRIS_SQL, model.Name, model.Time.ToString(), model.Event.ToString(), model.TableName, model.Statement);

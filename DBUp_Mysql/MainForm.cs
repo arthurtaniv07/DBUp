@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.IO;
@@ -23,8 +24,8 @@ namespace DBUp_Mysql
         PathSetting newpathCs = new PathSetting();
         PathSetting diffpathCs = new PathSetting();
 
-        string oldConnString = System.Configuration.ConfigurationManager.ConnectionStrings["old"].ConnectionString;
-        string newConnString = System.Configuration.ConfigurationManager.ConnectionStrings["new"].ConnectionString;
+        string oldConnString = "";
+        string newConnString = "";
         DBConnection oldConn = new DBConnection();
         DBConnection newConn = new DBConnection();
 
@@ -47,13 +48,43 @@ namespace DBUp_Mysql
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
+            //加载数据库链接
+            #region 加载数据库链接
+            var allConnection = ConfigurationManager.ConnectionStrings;
+            int inx = -1;
+            int oldInx = -1;
+            int newInx = -1;
+            foreach (ConnectionStringSettings item in allConnection)
+            {
+                inx++;
+                this.ddlOldDb.Items.Add(item.Name);
+                this.ddlNewDb.Items.Add(item.Name);
+                if ("old".Equals(item.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    oldInx = inx;
+                    this.ddlOldDb.SelectedIndex =inx;
+                }
+                else if("new".Equals(item.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    newInx = inx;
+                    this.ddlNewDb.SelectedIndex = inx;
+                }
+            }
+
+            if (oldInx < 0 || newInx < 0)
+            {
+                if (this.ddlOldDb.Items.Count > 0) this.ddlOldDb.SelectedIndex = 0;
+                if (this.ddlOldDb.Items.Count > 0) this.ddlNewDb.SelectedIndex = 0;
+            }
+
+            #endregion
 
             SetPathSetting(oldpathCs, "old");
             SetPathSetting(newpathCs, "new");
             SetPathSetting(diffpathCs, "diff");
 
-            newConn.ProviderName = System.Configuration.ConfigurationManager.ConnectionStrings["new"].ProviderName;
-            oldConn.ProviderName = System.Configuration.ConfigurationManager.ConnectionStrings["old"].ProviderName;
+            //newConn.ProviderName = ConfigurationManager.ConnectionStrings["new"].ProviderName;
+            //oldConn.ProviderName = ConfigurationManager.ConnectionStrings["old"].ProviderName;
 
             config.NewPathSetting = newpathCs;
             config.OldPathSetting = oldpathCs;
@@ -97,8 +128,21 @@ namespace DBUp_Mysql
         System.Threading.Thread t = null;
         private void btnCompare_Click(object sender, EventArgs e)
         {
-            oldConnString = System.Configuration.ConfigurationManager.ConnectionStrings["old"].ConnectionString;
-            newConnString = System.Configuration.ConfigurationManager.ConnectionStrings["new"].ConnectionString;
+            if (this.ddlOldDb.SelectedItem == null || this.ddlNewDb.SelectedItem == null)
+            {
+                MessageBox.Show("请选择数据库", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (this.ddlOldDb.SelectedItem.ToString() == this.ddlNewDb.SelectedItem.ToString())
+            {
+                MessageBox.Show("新旧数据库不能重复", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            newConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ProviderName;
+            oldConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ProviderName;
+
+            oldConnString = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ConnectionString;
+            newConnString = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ConnectionString;
             //从配置文件加载Setting
             if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
             {
@@ -203,6 +247,8 @@ namespace DBUp_Mysql
             this.btnCompare.Tag = "1";
             this.btnCompare.Enabled = false;
             this.RtxResult.Enabled = false;
+            this.ddlOldDb.Enabled = false;
+            this.ddlNewDb.Enabled = false;
 
             AppendOutputText("我们正在准备一些事情，请耐心等待\n", OutputType.Comment);
             using (helper = new MySqlOptionHelper(oldConnString))
@@ -567,6 +613,8 @@ namespace DBUp_Mysql
             this.btnCompare.Enabled = true;
             this.btnCompare.Tag = "0";
             this.RtxResult.Enabled = true;
+            this.ddlOldDb.Enabled = true;
+            this.ddlNewDb.Enabled = true;
             //bool compIsError = false;
 
             AppendOutputText("\n", OutputType.Comment);
@@ -671,7 +719,7 @@ namespace DBUp_Mysql
                 //    RtxResult.ScrollToCaret();
                 //    RtxResult.Refresh();
                 //}));
-                SetTextCallback d = new SetTextCallback(ReplaceLastLineText);
+                SetTextCallback d = new SetTextCallback(AppendOutputText);
                 this.Invoke(d, new object[] { text, type });
                 Application.DoEvents();
             }

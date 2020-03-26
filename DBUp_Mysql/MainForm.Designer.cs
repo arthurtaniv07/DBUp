@@ -34,6 +34,8 @@
             this.lblTotalTime = new System.Windows.Forms.Label();
             this.btnTh = new System.Windows.Forms.Button();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.ddlOldDb = new System.Windows.Forms.ComboBox();
+            this.ddlNewDb = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // btnCompare
@@ -62,8 +64,9 @@
             // 
             // cheComm
             // 
+            this.cheComm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cheComm.AutoSize = true;
-            this.cheComm.Location = new System.Drawing.Point(22, 17);
+            this.cheComm.Location = new System.Drawing.Point(438, 19);
             this.cheComm.Margin = new System.Windows.Forms.Padding(2);
             this.cheComm.Name = "cheComm";
             this.cheComm.Size = new System.Drawing.Size(48, 16);
@@ -106,11 +109,31 @@
             this.linkLabel1.TabStop = true;
             this.linkLabel1.Text = "注：谨慎使用该工具生成的SQL，造成的后果本软件以及开发者概不负责";
             // 
+            // ddlOldDb
+            // 
+            this.ddlOldDb.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ddlOldDb.FormattingEnabled = true;
+            this.ddlOldDb.Location = new System.Drawing.Point(12, 15);
+            this.ddlOldDb.Name = "ddlOldDb";
+            this.ddlOldDb.Size = new System.Drawing.Size(174, 20);
+            this.ddlOldDb.TabIndex = 30;
+            // 
+            // ddlNewDb
+            // 
+            this.ddlNewDb.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ddlNewDb.FormattingEnabled = true;
+            this.ddlNewDb.Location = new System.Drawing.Point(194, 15);
+            this.ddlNewDb.Name = "ddlNewDb";
+            this.ddlNewDb.Size = new System.Drawing.Size(174, 20);
+            this.ddlNewDb.TabIndex = 30;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(600, 381);
+            this.Controls.Add(this.ddlNewDb);
+            this.Controls.Add(this.ddlOldDb);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.lblTotalTime);
             this.Controls.Add(this.cheComm);
@@ -118,9 +141,10 @@
             this.Controls.Add(this.btnTh);
             this.Controls.Add(this.btnCompare);
             this.Margin = new System.Windows.Forms.Padding(2);
+            this.MinimumSize = new System.Drawing.Size(599, 399);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "数据库升级助手(简易版) - 作者：谭盼(13012363357)";
+            this.Text = "数据库升级助手(MySQL 简易版) - 作者：谭盼(13012363357)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.MainForm_Load);
@@ -137,6 +161,8 @@
         private System.Windows.Forms.Label lblTotalTime;
         private System.Windows.Forms.Button btnTh;
         private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.ComboBox ddlOldDb;
+        private System.Windows.Forms.ComboBox ddlNewDb;
     }
 }
 

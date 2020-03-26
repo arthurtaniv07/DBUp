@@ -7,7 +7,7 @@
     "IsSearFunc": true,
     "IsSearTri": true,
     "IsDiff": true,
-    "FileDataPath": "20191214154155-easesales-easesales_test",
+    "FileDataPath": "20200319193028-easesales-easesales",
     "IsFileDataPath_Table": false,
     "IsFileDataPath_View": false,
     "IsFileDataPath_Trig": false,
