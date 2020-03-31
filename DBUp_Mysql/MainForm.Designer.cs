@@ -144,7 +144,7 @@
             this.MinimumSize = new System.Drawing.Size(599, 399);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "数据库升级助手(MySQL 简易版) - 作者：谭盼(13012363357)";
+            this.Text = "数据库升级助手(MySQL 简易版) By谭盼(13012363357)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.MainForm_Load);

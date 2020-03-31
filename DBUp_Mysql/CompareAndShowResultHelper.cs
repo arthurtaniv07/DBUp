@@ -293,27 +293,108 @@ namespace DBUp_Mysql
                         if (!oldTableInfo.AllColumnInfo.ContainsKey(columnName))
                             addColumnNames.Add(columnName);
                     }
+                    List<string> oldCols = oldTableInfo.TableNames;
+                    List<string> newCols = newTableInfo.TableNames;
+                    foreach (var item in dropColumnNames)
+                        if (oldCols.Contains(item))
+                            oldCols.Remove(item);
+                    foreach (var item in addColumnNames)
+                        if (!oldCols.Contains(item))
+                            oldCols.Add(item);
+                    FieldSortedOption<string> fieldSortedOption = new FieldSortedOption<string>();
+                    fieldSortedOption.NewList = newCols;
+                    fieldSortedOption.OldList = oldCols;
+
+                    var sortingOption = new SortingOption<string>();
+                    sortingOption.GetSortedOption(ref fieldSortedOption);
+                    List<string> sortFielded = new List<string>();
+                    SortedOption<string> tempSort;
                     if (addColumnNames.Count > 0)
                     {
                         AppendLine(string.Format("  新版本中新增以下列：{0}\n", JoinString(addColumnNames, ",")), OutputType.Comment);
                         foreach (string columnName in addColumnNames)
                         {
-                            string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName]);
+                            bool isChecked = sortingOption.IsChecked(columnName, out tempSort);
+                            string offset = null;
+                            string fieldName = null;
+                            if (isChecked)
+                            {
+                                sortFielded.Add(columnName);
+                                offset = tempSort.OptionType.ToString();
+                                fieldName = tempSort.NewValue;
+                            }
+                            string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName], offset, fieldName);
                             AppendLine(addColumnSql, OutputType.Sql);
                         }
-                        //新增列后再修改顺序
-                        foreach (var item in newTableInfo.AllColumnInfo)
-                        {
 
+                    }
+                    // 找出列属性修改
+                    foreach (string columnName in newTableInfo.AllColumnInfo.Keys)
+                    {
+                        if (oldTableInfo.AllColumnInfo.ContainsKey(columnName))
+                        {
+                            ColumnInfo newColumnInfo = newTableInfo.AllColumnInfo[columnName];
+                            ColumnInfo oldColumnInfo = oldTableInfo.AllColumnInfo[columnName];
+                            // 比较各个属性
+                            bool isDataTypeSame = newColumnInfo.DataType.Equals(oldColumnInfo.DataType);
+                            bool isCommentSame = newColumnInfo.Comment.Equals(oldColumnInfo.Comment);
+                            if (!setting.CheckCommon) isCommentSame = true;
+                            bool isNotEmptySame = newColumnInfo.IsNotEmpty == oldColumnInfo.IsNotEmpty;
+                            bool isAutoIncrementSame = newColumnInfo.IsAutoIncrement == oldColumnInfo.IsAutoIncrement;
+                            bool isDefaultValueSame = newColumnInfo.DefaultValue.Equals(oldColumnInfo.DefaultValue);
+                            if (isDataTypeSame == false || isCommentSame == false || isNotEmptySame == false || isAutoIncrementSame == false || isDefaultValueSame == false)
+                            {
+                                AppendLine(string.Format("  列：{0}\n", columnName), OutputType.Comment);
+                                if (isDataTypeSame == false)
+                                    AppendLine(string.Format("    属性：数据类型{0} => {1}\n", oldColumnInfo.DataType, newColumnInfo.DataType), OutputType.Comment);
+                                if (isCommentSame == false)
+                                    AppendLine(string.Format("    属性：列注释\"{0}\" => \"{1}\"\n", oldColumnInfo.Comment, newColumnInfo.Comment), OutputType.Comment);
+                                if (isNotEmptySame == false)
+                                    AppendLine(string.Format("    属性：（为空）{0} => {1}\n", oldColumnInfo.IsNotEmpty == true ? "不允许" : "允许", newColumnInfo.IsNotEmpty == true ? "不允许" : "允许"), OutputType.Comment);
+                                if (isAutoIncrementSame == false)
+                                    AppendLine(string.Format("    属性：列设{0}  =>  {1}\n", oldColumnInfo.IsAutoIncrement == true ? "自增" : "不自增", newColumnInfo.IsAutoIncrement == true ? "自增" : "不自增"), OutputType.Comment);
+                                if (isDefaultValueSame == false)
+                                    AppendLine(string.Format("    属性：默认值{0}  =>  {1}\n", oldColumnInfo.DefaultValue, newColumnInfo.DefaultValue), OutputType.Comment);
+
+                                bool isChecked = sortingOption.IsChecked(columnName, out tempSort);
+                                string offset = null;
+                                string fieldName = null;
+                                if (isChecked)
+                                {
+                                    sortFielded.Add(columnName);
+                                    offset = tempSort.OptionType.ToString();
+                                    fieldName = tempSort.NewValue;
+                                }
+                                // 根据新的列属性进行修改
+                                string changeColumnSql = dHelper.GetChangeTableColumnSql(tableName, newColumnInfo, offset, fieldName);
+                                AppendLine(changeColumnSql, OutputType.Sql);
+                            }
                         }
                     }
+                    if ( fieldSortedOption.Checked)
+                    {
+                        var sss = fieldSortedOption.Options.Where(i => !sortFielded.Contains(i.OptionValue) && i.OptionType != SortedOptionType.NONE);
+                        if (sss.Any())
+                        {
+                            AppendLine("  旧版本数据库字段顺序改变\n", OutputType.Comment);
+                        }
+                        foreach (var item in sss)
+                        {
+                            string sortFieldSql = dHelper.GetModifySort(tableName, newTableInfo.AllColumnInfo[item.OptionValue], item.OptionType.ToString(), item.NewValue);
+                            AppendLine(sortFieldSql, OutputType.Sql);
+                        }
+                    }
+
+                    //新增列后再修改顺序
+
+
 
                     // 在改变列属性前需先同步索引设置，因为自增属性仅可用于设置了索引的列
                     // 找出主键修改
                     bool isPrimaryKeySame = newTableInfo.PrimaryKeyColumnNames.Count == oldTableInfo.PrimaryKeyColumnNames.Count && newTableInfo.PrimaryKeyColumnNames.Any(i => oldTableInfo.PrimaryKeyColumnNames.Contains(i));
-                    isPrimaryKeySame &= newTableInfo.PrimaryKeyColumnNames.Count > 0 || oldTableInfo.PrimaryKeyColumnNames.Count > 0;
+                    //isPrimaryKeySame &= newTableInfo.PrimaryKeyColumnNames.Count > 0 || oldTableInfo.PrimaryKeyColumnNames.Count > 0;
 
-                    if (isPrimaryKeySame == false)
+                    if (isPrimaryKeySame == false && (newTableInfo.PrimaryKeyColumnNames.Count > 0 || oldTableInfo.PrimaryKeyColumnNames.Count > 0))
                     {
                         string newPrimaryKeyString = newTableInfo.PrimaryKeyColumnNames.Count > 0 ? JoinString(newTableInfo.PrimaryKeyColumnNames, ",") : "无";
                         string oldPrimaryKeyString = oldTableInfo.PrimaryKeyColumnNames.Count > 0 ? JoinString(oldTableInfo.PrimaryKeyColumnNames, ",") : "无";
@@ -393,40 +474,6 @@ namespace DBUp_Mysql
                         }
                     }
 
-                    // 找出列属性修改
-                    foreach (string columnName in newTableInfo.AllColumnInfo.Keys)
-                    {
-                        if (oldTableInfo.AllColumnInfo.ContainsKey(columnName))
-                        {
-                            ColumnInfo newColumnInfo = newTableInfo.AllColumnInfo[columnName];
-                            ColumnInfo oldColumnInfo = oldTableInfo.AllColumnInfo[columnName];
-                            // 比较各个属性
-                            bool isDataTypeSame = newColumnInfo.DataType.Equals(oldColumnInfo.DataType);
-                            bool isCommentSame = newColumnInfo.Comment.Equals(oldColumnInfo.Comment);
-                            if (!setting.CheckCommon) isCommentSame = true;
-                            bool isNotEmptySame = newColumnInfo.IsNotEmpty == oldColumnInfo.IsNotEmpty;
-                            bool isAutoIncrementSame = newColumnInfo.IsAutoIncrement == oldColumnInfo.IsAutoIncrement;
-                            bool isDefaultValueSame = newColumnInfo.DefaultValue.Equals(oldColumnInfo.DefaultValue);
-                            if (isDataTypeSame == false || isCommentSame == false || isNotEmptySame == false || isAutoIncrementSame == false || isDefaultValueSame == false)
-                            {
-                                AppendLine(string.Format("  列：{0}\n", columnName), OutputType.Comment);
-                                if (isDataTypeSame == false)
-                                    AppendLine(string.Format("    属性：数据类型{0} => {1}\n", oldColumnInfo.DataType, newColumnInfo.DataType), OutputType.Comment);
-                                if (isCommentSame == false)
-                                    AppendLine(string.Format("    属性：列注释\"{0}\" => \"{1}\"\n", oldColumnInfo.Comment, newColumnInfo.Comment), OutputType.Comment);
-                                if (isNotEmptySame == false)
-                                    AppendLine(string.Format("    属性：（为空）{0} => {1}\n", oldColumnInfo.IsNotEmpty == true ? "不允许" : "允许", newColumnInfo.IsNotEmpty == true ? "不允许" : "允许"), OutputType.Comment);
-                                if (isAutoIncrementSame == false)
-                                    AppendLine(string.Format("    属性：列设{0}  =>  {1}\n", oldColumnInfo.IsAutoIncrement == true ? "自增" : "不自增", newColumnInfo.IsAutoIncrement == true ? "自增" : "不自增"), OutputType.Comment);
-                                if (isDefaultValueSame == false)
-                                    AppendLine(string.Format("    属性：默认值{0}  =>  {1}\n", oldColumnInfo.DefaultValue, newColumnInfo.DefaultValue), OutputType.Comment);
-
-                                // 根据新的列属性进行修改
-                                string changeColumnSql = dHelper.GetChangeTableColumnSql(tableName, newColumnInfo);
-                                AppendLine(changeColumnSql, OutputType.Sql);
-                            }
-                        }
-                    }
 
                     // 对比表校对集
                     if (!newTableInfo.Collation.Equals(oldTableInfo.Collation))

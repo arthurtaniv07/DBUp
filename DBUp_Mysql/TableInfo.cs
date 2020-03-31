@@ -23,7 +23,11 @@ namespace DBUp_Mysql
         // 校对集
         public string Collation { get; set; }
         // 所有列信息（key：列名， value：列信息）
-        public Dictionary<string, ColumnInfo> AllColumnInfo { get; set; }
+        public SortedDictionary<string, ColumnInfo> AllColumnInfo { get; set; }
+        /// <summary>
+        ///  表名
+        /// </summary>
+        public List<string> TableNames { get; set; }
         // 主键列的列名
         public List<string> PrimaryKeyColumnNames { get; set; }
         // 索引设置（key：索引名， value：按顺序排列的列名）
@@ -34,9 +38,10 @@ namespace DBUp_Mysql
         public TableOption Option { get; set; }
         public TableInfo()
         {
-            AllColumnInfo = new Dictionary<string, ColumnInfo>();
+            AllColumnInfo = new SortedDictionary<string, ColumnInfo>();
             PrimaryKeyColumnNames = new List<string>();
             IndexInfo = new Dictionary<string, TableIndex>();
+            TableNames = new List<string>();
         }
     }
 
@@ -357,6 +362,47 @@ namespace DBUp_Mysql
         Func
     }
 
+    /// <summary>
+    /// 移动操作步骤
+    /// </summary>
+    public class FieldSortedOption<T>
+    {
+        public List<T> OldList { get; set; }
+        public List<T> NewList { get; set; }
+        public List<SortedOption<T>> Options { get; set; }
+
+        public bool Checked { get; set; } = false;
+    }
+    /// <summary>
+    /// 将<see cref="OptionValue"/> 移动到<see cref="OptionType"/>  (于<see cref="NewValue"/>)
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class SortedOption<T>
+    {
+        /// <summary>
+        /// 操作的值
+        /// </summary>
+        public T OptionValue { get; set; }
+
+        public T NewValue { get; set; }
+        /// <summary>
+        /// <see cref="NewValue"/>在<see cref="OptionValue"/>之后 或者第一位
+        /// </summary>
+        public SortedOptionType OptionType { get; set; }
+    }
+    public enum SortedOptionType
+    {
+        NONE,
+        /// <summary>
+        /// 第一
+        /// </summary>
+        FIRST,
+        /// <summary>
+        /// 在之后
+        /// </summary>
+        AFTER
+
+    }
 
     /// <summary>
     /// 数据库全局信息

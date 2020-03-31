@@ -324,6 +324,7 @@ namespace DBUp_Mysql
                     columnInfo.DefaultValue = defaultValueString;
 
                     tableInfo.AllColumnInfo.Add(columnInfo.ColumnName, columnInfo);
+                    tableInfo.TableNames.Add(columnInfo.ColumnName);
                 }
             }
 
@@ -476,27 +477,44 @@ namespace DBUp_Mysql
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_COLUMN_SQL, columnName));
         }
-        private const string _ADD_COLUMN_SQL = "ADD COLUMN `{0}` {1} {2}{3} COMMENT '{4}';\n";
+        private const string _ADD_COLUMN_SQL = "ADD COLUMN `{0}` {1} {2}{3} COMMENT '{4}'{5};\n";
         /// <summary>
         /// 获取添加列的SQL
         /// </summary>
-        public string GetAddTableColumnSql(string tableName, ColumnInfo columnInfo)
+        public string GetAddTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
             string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
             // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
             string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment));
+            string offStr = "";
+            if (!string.IsNullOrWhiteSpace(offset))
+                offStr = offset.ToUpper() == "FIRST" ? " " + offset : string.Format(" {0} `{1}`", offset, fieldName);
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment, offStr));
         }
-        private const string _CHANGE_COLUMN_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} COMMENT '{4}';\n";
+
+        private const string _CHANGE_COLUMN_SORT_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} {4};\n";
+        public string GetModifySort(string tableName, ColumnInfo columnInfo, string offset, string fieldName)
+        {
+            string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
+            // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
+            string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
+            string offStr = offset.ToUpper() == "FIRST" ? offset : string.Format("{0} `{1}`", offset, fieldName);
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SORT_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, offStr));
+        }
+
+        private const string _CHANGE_COLUMN_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} COMMENT '{4}'{5};\n";
         /// <summary>
         /// 获取修改列的SQL
         /// </summary>
-        public string GetChangeTableColumnSql(string tableName, ColumnInfo columnInfo)
+        public string GetChangeTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
             string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
             // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
             string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment));
+            string offStr = "";
+            if (!string.IsNullOrWhiteSpace(offset))
+                offStr = offset.ToUpper() == "FIRST" ? " " + offset : string.Format(" {0} `{1}`", offset, fieldName);
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment, offStr));
         }
 
         private const string _DROP_PRIMARY_KEY_SQL = "DROP PRIMARY KEY ;\n";
