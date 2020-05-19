@@ -262,6 +262,9 @@ namespace DBUp_Mysql
             {
                 if (oldItems.Keys.Contains(tableName))
                 {
+                    //if (tableName == "able_deliverynote") {
+                    //    int i = 0;
+                    //}
                     AppendLine("----------------------------------------------\n", OutputType.Comment);
                     AppendLine(string.Format("表：{0}\n", tableName), OutputType.Comment);
                     TableInfo newTableInfo = newItems[tableName];
@@ -285,6 +288,8 @@ namespace DBUp_Mysql
                             AppendLine(dropColumnSql, OutputType.Sql);
                         }
                     }
+
+
 
                     // 找出新增列
                     List<string> addColumnNames = new List<string>();
@@ -376,7 +381,7 @@ namespace DBUp_Mysql
                         var sss = fieldSortedOption.Options.Where(i => !sortFielded.Contains(i.OptionValue) && i.OptionType != SortedOptionType.NONE);
                         if (sss.Any())
                         {
-                            AppendLine("  旧版本数据库字段顺序改变\n", OutputType.Comment);
+                            AppendLine("  新版本数据库字段顺序改变\n", OutputType.Comment);
                         }
                         foreach (var item in sss)
                         {
@@ -402,9 +407,13 @@ namespace DBUp_Mysql
                         // 先删除原有的主键设置
                         string dropPrimaryKeySql = dHelper.GetDropPrimarySql(tableName);
                         AppendLine(dropPrimaryKeySql, OutputType.Sql);
-                        // 再重新设置
-                        string addPrimaryKeySql = dHelper.GetAddPrimarySql(tableName, newTableInfo.PrimaryKeyColumnNames);
-                        AppendLine(addPrimaryKeySql, OutputType.Sql);
+
+                        if (newTableInfo.PrimaryKeyColumnNames.Any())
+                        {
+                            // 再重新设置
+                            string addPrimaryKeySql = dHelper.GetAddPrimarySql(tableName, newTableInfo.PrimaryKeyColumnNames);
+                            AppendLine(addPrimaryKeySql, OutputType.Sql);
+                        }
                     }
 
                     // 找出唯一索引修改
@@ -479,7 +488,7 @@ namespace DBUp_Mysql
                     if (!newTableInfo.Collation.Equals(oldTableInfo.Collation))
                     {
                         AppendLine(string.Format("  校对集：\"{0}\" => \"{1}\"\n", oldTableInfo.Collation, newTableInfo.Collation), OutputType.Comment);
-                        string alterTableComment = dHelper.GetChangeCollateSql(tableName, oldTableInfo.Collation);
+                        string alterTableComment = dHelper.GetChangeCollateSql(tableName, newTableInfo.Collation);
                         AppendLine(alterTableComment, OutputType.Sql);
                     }
 
@@ -495,91 +504,94 @@ namespace DBUp_Mysql
                     // 对比表选项
                     string alterTableOption;
 
-                    if (oldTableInfo.Option.Auto_Increment != newTableInfo.Option.Auto_Increment)
+                    bool isDiffTableOption = false;
+                    if (isDiffTableOption)
                     {
-                        AppendLine(string.Format("  自动增加：{0} => {1}\n", oldTableInfo.Option.Auto_Increment, newTableInfo.Option.Auto_Increment), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Auto_Increment), oldTableInfo.Option.Auto_Increment);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Auto_Increment != newTableInfo.Option.Auto_Increment)
+                        {
+                            AppendLine(string.Format("  自动增加：{0} => {1}\n", oldTableInfo.Option.Auto_Increment, newTableInfo.Option.Auto_Increment), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Auto_Increment), newTableInfo.Option.Auto_Increment);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.Avg_Row_Length != newTableInfo.Option.Avg_Row_Length)
-                    {
-                        AppendLine(string.Format("  平均记录长度：{0} => {1}\n", oldTableInfo.Option.Avg_Row_Length, newTableInfo.Option.Avg_Row_Length), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Avg_Row_Length), oldTableInfo.Option.Avg_Row_Length);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Avg_Row_Length != newTableInfo.Option.Avg_Row_Length)
+                        {
+                            AppendLine(string.Format("  平均记录长度：{0} => {1}\n", oldTableInfo.Option.Avg_Row_Length, newTableInfo.Option.Avg_Row_Length), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Avg_Row_Length), newTableInfo.Option.Avg_Row_Length);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.Checksum != newTableInfo.Option.Checksum)
-                    {
-                        AppendLine(string.Format("  检查记录和：{0} => {1}\n", oldTableInfo.Option.Checksum, newTableInfo.Option.Checksum), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Checksum), oldTableInfo.Option.Checksum);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Checksum != newTableInfo.Option.Checksum)
+                        {
+                            AppendLine(string.Format("  检查记录和：{0} => {1}\n", oldTableInfo.Option.Checksum, newTableInfo.Option.Checksum), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Checksum), newTableInfo.Option.Checksum);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.COMPRESSION != newTableInfo.Option.COMPRESSION)
-                    {
-                        AppendLine(string.Format("  压缩方式：{0} => {1}\n", oldTableInfo.Option.COMPRESSION, newTableInfo.Option.COMPRESSION), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.COMPRESSION), oldTableInfo.Option.COMPRESSION);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.COMPRESSION != newTableInfo.Option.COMPRESSION)
+                        {
+                            AppendLine(string.Format("  压缩方式：{0} => {1}\n", oldTableInfo.Option.COMPRESSION, newTableInfo.Option.COMPRESSION), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.COMPRESSION), newTableInfo.Option.COMPRESSION);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.ENCRYPTION != newTableInfo.Option.ENCRYPTION)
-                    {
-                        AppendLine(string.Format("  加密：{0} => {1}\n", oldTableInfo.Option.ENCRYPTION, newTableInfo.Option.ENCRYPTION), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.ENCRYPTION), oldTableInfo.Option.ENCRYPTION);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.ENCRYPTION != newTableInfo.Option.ENCRYPTION)
+                        {
+                            AppendLine(string.Format("  加密：{0} => {1}\n", oldTableInfo.Option.ENCRYPTION, newTableInfo.Option.ENCRYPTION), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.ENCRYPTION), newTableInfo.Option.ENCRYPTION);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.Engine != newTableInfo.Option.Engine)
-                    {
-                        AppendLine(string.Format("  引擎：{0} => {1}\n", oldTableInfo.Option.Engine, newTableInfo.Option.Engine), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Engine), oldTableInfo.Option.Engine);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Engine != newTableInfo.Option.Engine)
+                        {
+                            AppendLine(string.Format("  引擎：{0} => {1}\n", oldTableInfo.Option.Engine, newTableInfo.Option.Engine), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Engine), newTableInfo.Option.Engine);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.Max_Rows != newTableInfo.Option.Max_Rows)
-                    {
-                        AppendLine(string.Format("  最大记录行数：{0} => {1}\n", oldTableInfo.Option.Max_Rows, newTableInfo.Option.Max_Rows), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Max_Rows), oldTableInfo.Option.Max_Rows);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Max_Rows != newTableInfo.Option.Max_Rows)
+                        {
+                            AppendLine(string.Format("  最大记录行数：{0} => {1}\n", oldTableInfo.Option.Max_Rows, newTableInfo.Option.Max_Rows), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Max_Rows), newTableInfo.Option.Max_Rows);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.Min_Rows != newTableInfo.Option.Min_Rows)
-                    {
-                        AppendLine(string.Format("  最小记录行数：{0} => {1}\n", oldTableInfo.Option.Min_Rows, newTableInfo.Option.Min_Rows), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.Min_Rows), oldTableInfo.Option.Min_Rows);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.Min_Rows != newTableInfo.Option.Min_Rows)
+                        {
+                            AppendLine(string.Format("  最小记录行数：{0} => {1}\n", oldTableInfo.Option.Min_Rows, newTableInfo.Option.Min_Rows), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Min_Rows), newTableInfo.Option.Min_Rows);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.RowFormat != newTableInfo.Option.RowFormat)
-                    {
-                        AppendLine(string.Format("  记录格式：{0} => {1}\n", oldTableInfo.Option.RowFormat, newTableInfo.Option.RowFormat), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.RowFormat), oldTableInfo.Option.RowFormat);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.RowFormat != newTableInfo.Option.RowFormat)
+                        {
+                            AppendLine(string.Format("  记录格式：{0} => {1}\n", oldTableInfo.Option.RowFormat, newTableInfo.Option.RowFormat), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.RowFormat), newTableInfo.Option.RowFormat);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.STATS_AUTO_RECALC != newTableInfo.Option.STATS_AUTO_RECALC)
-                    {
-                        AppendLine(string.Format("  累计数据自动重计：{0} => {1}\n", oldTableInfo.Option.STATS_AUTO_RECALC, newTableInfo.Option.STATS_AUTO_RECALC), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.STATS_AUTO_RECALC), oldTableInfo.Option.STATS_AUTO_RECALC);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.STATS_AUTO_RECALC != newTableInfo.Option.STATS_AUTO_RECALC)
+                        {
+                            AppendLine(string.Format("  累计数据自动重计：{0} => {1}\n", oldTableInfo.Option.STATS_AUTO_RECALC, newTableInfo.Option.STATS_AUTO_RECALC), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.STATS_AUTO_RECALC), newTableInfo.Option.STATS_AUTO_RECALC);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.STATS_PERSISTENT != newTableInfo.Option.STATS_PERSISTENT)
-                    {
-                        AppendLine(string.Format("  统计数据持久：{0} => {1}\n", oldTableInfo.Option.STATS_PERSISTENT, newTableInfo.Option.STATS_PERSISTENT), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.STATS_PERSISTENT), oldTableInfo.Option.STATS_PERSISTENT);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
+                        if (oldTableInfo.Option.STATS_PERSISTENT != newTableInfo.Option.STATS_PERSISTENT)
+                        {
+                            AppendLine(string.Format("  统计数据持久：{0} => {1}\n", oldTableInfo.Option.STATS_PERSISTENT, newTableInfo.Option.STATS_PERSISTENT), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.STATS_PERSISTENT), newTableInfo.Option.STATS_PERSISTENT);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
-                    if (oldTableInfo.Option.TABLESPACE != newTableInfo.Option.TABLESPACE)
-                    {
-                        AppendLine(string.Format("  表空间：{0} => {1}\n", oldTableInfo.Option.TABLESPACE, newTableInfo.Option.TABLESPACE), OutputType.Comment);
-                        alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(oldTableInfo.Option.TABLESPACE), oldTableInfo.Option.TABLESPACE);
-                        AppendLine(alterTableOption, OutputType.Sql);
-                    }
-                    
+                        if (oldTableInfo.Option.TABLESPACE != newTableInfo.Option.TABLESPACE)
+                        {
+                            AppendLine(string.Format("  表空间：{0} => {1}\n", oldTableInfo.Option.TABLESPACE, newTableInfo.Option.TABLESPACE), OutputType.Comment);
+                            alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.TABLESPACE), newTableInfo.Option.TABLESPACE);
+                            AppendLine(alterTableOption, OutputType.Sql);
+                        }
 
+                    }
 
 
 
@@ -1041,19 +1053,45 @@ namespace DBUp_Mysql
                     //}
                     //避免DEFINER 和注释产生影响
                     var flagTypeStr = isFun ? "FUNCTION" : "PROCEDURE";
+
                     string oldSql = oldTableInfo.Info.CreateSQL;
-                    if (oldSql.IndexOf("CREATE DEFINER=") > -1 && oldSql.IndexOf(flagTypeStr) > 0)
-                    {
-                        oldSql = "CREATE " + oldSql.Substring(oldSql.IndexOf(flagTypeStr));
-                    }
                     string newSql = newTableInfo.Info.CreateSQL;
+
+                    if (oldSql.IndexOf("CREATE DEFINER=") > -1 && oldSql.IndexOf(flagTypeStr) > 0)
+                        oldSql = "CREATE " + oldSql.Substring(oldSql.IndexOf(flagTypeStr));
                     if (newSql.IndexOf("CREATE DEFINER=") > -1 && newSql.IndexOf(flagTypeStr) > 0)
-                    {
                         newSql = "CREATE " + newSql.Substring(newSql.IndexOf(flagTypeStr));
-                    }
+
+                    //忽略 CHARSET
+                    int temp_int = oldSql.IndexOf(" CHARSET ");
+                    if (temp_int > 0 && oldSql.IndexOf("begin") > temp_int)
+                        oldSql = oldSql.Substring(0, temp_int) + "\r\n" + oldSql.Substring(oldSql.IndexOf("begin"));
+                    temp_int = newSql.IndexOf(" CHARSET ");
+                    if (temp_int > 0 && newSql.IndexOf("begin") > temp_int)
+                        newSql = newSql.Substring(0, temp_int) + "\r\n" + newSql.Substring(newSql.IndexOf("begin"));
+
+                    //忽略换行
+                    oldSql = oldSql.Replace("\r\n", "").Replace("\n", "");
+                    newSql = newSql.Replace("\r\n", "").Replace("\n", "");
+
+                    //if (tableName == "fun_getMemberPropertyValue") {
+                    //    int ooo = 0;
+                    //}
                     if (!oldSql.Equals(newSql))
                     {
                         AppendLine("  " + temp + "内容有变化\n", OutputType.Comment);
+                        //int inxItem = -1;
+                        //foreach (char item in oldSql)
+                        //{
+                        //    inxItem++;
+                        //    if (newSql.Length > inxItem)
+                        //    {
+                        //        if (newSql[inxItem] != oldSql[inxItem])
+                        //        {
+                        //            bool sqlNoEq = false;
+                        //        }
+                        //    }
+                        //}
                         //删除后创建
                         if (isFun)
                         {

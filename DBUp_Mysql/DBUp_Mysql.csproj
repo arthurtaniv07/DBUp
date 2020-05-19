@@ -43,6 +43,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -54,6 +55,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Network\Class1.cs" />
     <Compile Include="CompareAndShowResultHelper.cs" />
     <Compile Include="StMailHelper.cs" />
     <Compile Include="ConfigHelper.cs" />
@@ -119,6 +121,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="DLL\MySql.Data.dll" />
+    <Content Include="DLL\MySql.Data1.dll" />
     <Content Include="DLL\Newtonsoft.Json.dll" />
     <Content Include="DLL\Newtonsoft.Json.xml" />
   </ItemGroup>

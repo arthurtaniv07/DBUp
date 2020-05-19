@@ -46,8 +46,7 @@ namespace DBUp_Mysql
                     return _port;
                 try
                 {
-                    if(Conn.State == ConnectionState.Closed)
-                        Conn.Open();
+                    Open();
                     if (Conn.State == ConnectionState.Open)
                     {
                         // 查询端口
@@ -59,14 +58,13 @@ namespace DBUp_Mysql
                             _port = "0";
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     _port = "-1";
                 }
                 finally
                 {
-                    if (Conn.State == ConnectionState.Open)
-                        Conn.Close();
+                    Close();
                 }
                 return _port;
 
@@ -97,8 +95,16 @@ namespace DBUp_Mysql
         }
         public bool Open()
         {
-            if (Conn.State != ConnectionState.Open)
-                Conn.Open();
+            try
+            {
+                if (Conn.State != ConnectionState.Open)
+                    Conn.Open();
+            }
+            catch (Exception)
+            {
+                if (Conn.State != ConnectionState.Open)
+                    Conn.Open();
+            }
             return Conn.State == ConnectionState.Open;
         }
         public bool Close()
@@ -151,8 +157,7 @@ namespace DBUp_Mysql
             try
             {
                 //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
-                if (Conn.State == ConnectionState.Closed)
-                    Conn.Open();
+                Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -625,8 +630,7 @@ namespace DBUp_Mysql
             try
             {
                 //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
-                if (Conn.State == ConnectionState.Closed)
-                    Conn.Open();
+                Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -718,8 +722,7 @@ namespace DBUp_Mysql
             try
             {
                 //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
-                if (Conn.State == ConnectionState.Closed)
-                    Conn.Open();
+                Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -813,9 +816,12 @@ namespace DBUp_Mysql
         {
             string sql = model.Info.CreateSQL;
             if (sql.IndexOf("CREATE DEFINER=") > -1 && sql.IndexOf("FUNCTION") > 0)
-            {
                 sql = "CREATE " + sql.Substring(sql.IndexOf("FUNCTION"));
-            }
+
+            int temp_int = sql.IndexOf(" CHARSET ");
+            if (temp_int > 0 && sql.IndexOf("begin") > temp_int)
+                sql = sql.Substring(0, temp_int) + (sql.IndexOf("\r\n") > 0 ? "\r\n" : "\n") + sql.Substring(sql.IndexOf("begin"));
+
             return string.Format(_ADD_FUNC_SQL, sql);
         }
 
@@ -836,8 +842,7 @@ namespace DBUp_Mysql
             try
             {
                 //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
-                if (Conn.State == ConnectionState.Closed)
-                    Conn.Open();
+                Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
@@ -932,9 +937,11 @@ namespace DBUp_Mysql
         {
             string sql = model.Info.CreateSQL;
             if (sql.IndexOf("CREATE DEFINER=") > -1 && sql.IndexOf("PROCEDURE") > 0)
-            {
                 sql = "CREATE " + sql.Substring(sql.IndexOf("PROCEDURE"));
-            }
+
+            int temp_int = sql.IndexOf(" CHARSET ");
+            if (temp_int > 0 && sql.IndexOf("begin") > temp_int)
+                sql = sql.Substring(0, temp_int) + "\r\n" + sql.Substring(sql.IndexOf("begin"));
             return string.Format(_ADD_PROCS_SQL, sql);
         }
 
@@ -955,8 +962,7 @@ namespace DBUp_Mysql
             try
             {
                 //在调用之前已经打开连接，不知道为什么这里的数据库连接状态是关闭的要再次打开
-                if (Conn.State == ConnectionState.Closed)
-                    Conn.Open();
+                Open();
                 if (Conn.State == ConnectionState.Open)
                 {
                     // 获取已存在的数据表名
