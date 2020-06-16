@@ -128,6 +128,8 @@ namespace DBUp_Mysql
         System.Threading.Thread t = null;
         private void btnCompare_Click(object sender, EventArgs e)
         {
+
+
             if (this.ddlOldDb.SelectedItem == null || this.ddlNewDb.SelectedItem == null)
             {
                 MessageBox.Show("请选择数据库", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -226,6 +228,30 @@ namespace DBUp_Mysql
             }
         }
 
+
+        private void SetStatus(bool isStart)
+        {
+            if (isStart)
+            {
+                this.btnCompare.Tag = "1";
+                this.btnCompare.Enabled = false;
+                this.RtxResult.Enabled = false;
+                this.ddlOldDb.Enabled = false;
+                this.ddlNewDb.Enabled = false;
+                totalTime.Stop();
+                totalTime.Start();
+            }
+            else
+            {
+                this.btnCompare.Tag = "0";
+                this.btnCompare.Enabled = true;
+                this.RtxResult.Enabled = true;
+                this.ddlOldDb.Enabled = true;
+                this.ddlNewDb.Enabled = true;
+                totalTime.Stop();
+            }
+        }
+
         private void StartCompare()
         {
 
@@ -236,8 +262,6 @@ namespace DBUp_Mysql
 
 
             startTime = DateTime.Now;
-            totalTime.Stop();
-            totalTime.Start();
             SetTotalTime();
 
             ClearOutputText();
@@ -248,27 +272,72 @@ namespace DBUp_Mysql
             string tempStr = "";
             bool tempBool = false;
 
-            this.btnCompare.Tag = "1";
-            this.btnCompare.Enabled = false;
-            this.RtxResult.Enabled = false;
-            this.ddlOldDb.Enabled = false;
-            this.ddlNewDb.Enabled = false;
+            SetStatus(true);
 
             AppendOutputText("我们正在准备一些事情，请耐心等待\n", OutputType.Comment);
+
+
+
+
             using (helper = new MySqlOptionHelper(oldConnString))
             {
+                ////测试连接到数据库，以免报错
+                //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
+                //if (!helper.TestLine(10000))
+                //{
+                //    AppendOutputText("旧数据库连接失败\n", OutputType.Comment);
+                //    MessageBox.Show("旧数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    SetStatus(false);
+                //    return;
+                //}
+                //else
+                //{
+                //    AppendOutputText("旧数据库连接成功\n", OutputType.Comment);
+                //}
+
+
                 oldDbName = helper.DbName;
                 oldServerName = helper.Server;
                 oldConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
             }
             using (helper = new MySqlOptionHelper(newConnString))
             {
+                ////测试连接到数据库，以免报错
+                //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
+                //if (!helper.TestLine(10000))
+                //{
+                //    AppendOutputText("新数据库连接失败\n", OutputType.Comment);
+                //    MessageBox.Show("新数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    SetStatus(false);
+                //    return;
+                //}
+                //else
+                //{
+                //    AppendOutputText("新数据库连接成功\n", OutputType.Comment);
+                //}
+
                 newDbName = helper.DbName;
                 newServerName = helper.Server;
                 newConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
             }
-
             AppendOutputText("\n", OutputType.None);
+            if (oldConn.ConnectionString == newConn.ConnectionString)
+            {
+                AppendOutputText("新旧数据库数据源一致 无需比较", OutputType.Error);
+                MessageBox.Show("结束对比：新旧数据库数据源一致 无需比较", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                SetStatus(false);
+                return;
+            }
+            //int tempInx = 0;
+            ////从网卡层面判断是否联网
+            //if (!Win32API.InternetGetConnectedState(ref tempInx, 0))
+            //{
+            //    AppendOutputText("请检查你的网络状态", OutputType.Error);
+            //    MessageBox.Show("结束对比：请检查你的网络状态", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    SetStatus(false);
+            //    return;
+            //}
+
             string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName);
             if (!Directory.Exists(resultStr))
             {
@@ -612,19 +681,12 @@ namespace DBUp_Mysql
                 }
             }
 
-
-
-            this.btnCompare.Enabled = true;
-            this.btnCompare.Tag = "0";
-            this.RtxResult.Enabled = true;
-            this.ddlOldDb.Enabled = true;
-            this.ddlNewDb.Enabled = true;
             //bool compIsError = false;
 
             AppendOutputText("\n", OutputType.Comment);
             AppendOutputText("执行完毕\n", OutputType.Comment);
 
-            totalTime.Stop();
+            SetStatus(false);
             //try
             //{
             //    AbortTh();

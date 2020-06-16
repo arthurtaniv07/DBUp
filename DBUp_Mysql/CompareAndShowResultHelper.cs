@@ -159,7 +159,7 @@ namespace DBUp_Mysql
             return true;
         }
 
-        public void Output(string text, OutputType outputType, Setting setting, SqlType sqlType)
+        public void Output(string text, OutputType outputType, Setting setting, SqlType sqlType, bool appendLing = true)
         {
             if (OutputText == null) return;
             //注释
@@ -170,8 +170,12 @@ namespace DBUp_Mysql
                 if (setting.OutputDeleteSql == false) return;
                 if (setting.OutputDeleteSqlIsCommon) outputType = OutputType.Comment;
             }
-
-            OutputText?.Invoke(text, outputType);
+            if (appendLing)
+            {
+                AppendLine(text, outputType);
+                return;
+            }
+            OutputText(text, outputType);
         }
     }
     public enum SqlType

@@ -93,6 +93,63 @@ namespace DBUp_Mysql
         public MySqlOptionHelper()
         {
         }
+        /// <summary>
+        /// 测试连接
+        /// </summary>
+        /// <param name="maxSleepTime">超时时间</param>
+        /// <returns></returns>
+        public bool TestLine(int maxSleepTime = 5000)
+        {
+            try
+            {
+                bool rel = false;
+                System.Threading.Thread th = new System.Threading.Thread(delegate ()
+                {
+
+                    try
+                    {
+                        Conn.Open();
+                        rel = true;
+                    }
+                    catch (Exception)
+                    {
+                        rel = false;
+                    }
+                    finally
+                    {
+                        if (Conn != null)
+                            Close();
+                    }
+                });
+                th.Start();
+
+
+                int warnTime = 0;
+                //设置一个循环来等待子线程结束
+                while (th.ThreadState != System.Threading.ThreadState.Stopped)
+                {
+                    int rTime = 10;
+                    warnTime += rTime;
+                    th.Join(rTime);
+                    if (warnTime > maxSleepTime)
+                    {
+                        //如果等待的时间大于 maxSleepTime 则跳出循环
+                        break;
+                    }
+                }
+
+                if (th.ThreadState != System.Threading.ThreadState.Stopped)
+                {
+                    th.Abort();
+                }
+                return rel;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public bool Open()
         {
             try

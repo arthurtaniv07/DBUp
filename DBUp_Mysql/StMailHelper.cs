@@ -49,7 +49,6 @@ namespace DBUp_Mysql
             toEmail = ForwardEmail ?? toEmail;
             var newSmtpModel = new StSmtp()
             {
-                SiteId = 0,
                 SmtpServer = smtpServer,
                 SmtpUserName = from,
                 SmtpAccountName = SmtpAccountName,
@@ -141,7 +140,7 @@ namespace DBUp_Mysql
             if (!string.IsNullOrEmpty(smtpModel.SmtpPassword))
             {
                 string userName = smtpModel.SmtpUserName;
-                if (!string.IsNullOrEmpty(smtpModel.SmtpAccountName) && smtpModel.SiteId == 0)
+                if (!string.IsNullOrEmpty(smtpModel.SmtpAccountName))
                 {
                     userName = smtpModel.SmtpAccountName;
                 }
@@ -153,15 +152,10 @@ namespace DBUp_Mysql
             smtp.Send(m);
         }
     } 
-
-    public class StMail
-    {
-
-    }
+    
     public partial class StSmtp
     {
         #region Model
-        private uint _siteid;
         private string _smtpserver;
         private string _smtpusername;
         private string _smtpaccountname;
@@ -169,15 +163,7 @@ namespace DBUp_Mysql
         private bool _smtpenablessl = false;
         private uint _smtpport = 25;
         private string _mode;
-
-        /// <summary>
-        /// 網站id
-        /// </summary>
-        public uint SiteId
-        {
-            set { _siteid = value; }
-            get { return _siteid; }
-        }
+        
 
         /// <summary>
         /// smtp地址
