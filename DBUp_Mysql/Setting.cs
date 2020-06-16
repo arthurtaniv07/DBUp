@@ -32,5 +32,18 @@ namespace DBUp_Mysql
         public bool IsFileDataPath_Trig { get; set; } = false;
         public bool IsFileDataPath_Func { get; set; } = false;
         public bool IsFileDataPath_Proc { get; set; } = false;
+
+        /// <summary>
+        /// 输出注释
+        /// </summary>
+        public bool OutputComment { get; set; } = true;
+        /// <summary>
+        /// 输出删除的sql
+        /// </summary>
+        public bool OutputDeleteSql { get; set; } = true;
+        /// <summary>
+        /// 是否将删除语句输出为注释 （不受<see cref="OutputComment"/>影响）
+        /// </summary>
+        public bool OutputDeleteSqlIsCommon { get; set; } = false;
     }
 }

@@ -36,13 +36,17 @@
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.ddlOldDb = new System.Windows.Forms.ComboBox();
             this.ddlNewDb = new System.Windows.Forms.ComboBox();
+            this.xhkOutComment = new System.Windows.Forms.CheckBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.chkOutDeleteSql = new System.Windows.Forms.CheckBox();
+            this.chkOutDeleteSqlIsCommon = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // btnCompare
             // 
             this.btnCompare.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnCompare.Location = new System.Drawing.Point(10, 44);
+            this.btnCompare.Location = new System.Drawing.Point(10, 71);
             this.btnCompare.Name = "btnCompare";
             this.btnCompare.Size = new System.Drawing.Size(580, 35);
             this.btnCompare.TabIndex = 8;
@@ -55,10 +59,10 @@
             this.RtxResult.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.RtxResult.Location = new System.Drawing.Point(10, 87);
+            this.RtxResult.Location = new System.Drawing.Point(10, 111);
             this.RtxResult.Margin = new System.Windows.Forms.Padding(2);
             this.RtxResult.Name = "RtxResult";
-            this.RtxResult.Size = new System.Drawing.Size(582, 272);
+            this.RtxResult.Size = new System.Drawing.Size(582, 281);
             this.RtxResult.TabIndex = 9;
             this.RtxResult.Text = "";
             // 
@@ -66,19 +70,19 @@
             // 
             this.cheComm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cheComm.AutoSize = true;
-            this.cheComm.Location = new System.Drawing.Point(438, 19);
+            this.cheComm.Location = new System.Drawing.Point(414, 19);
             this.cheComm.Margin = new System.Windows.Forms.Padding(2);
             this.cheComm.Name = "cheComm";
-            this.cheComm.Size = new System.Drawing.Size(48, 16);
+            this.cheComm.Size = new System.Drawing.Size(72, 16);
             this.cheComm.TabIndex = 10;
-            this.cheComm.Text = "注释";
+            this.cheComm.Text = "比较注释";
             this.cheComm.UseVisualStyleBackColor = true;
             // 
             // lblTotalTime
             // 
             this.lblTotalTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lblTotalTime.AutoSize = true;
-            this.lblTotalTime.Location = new System.Drawing.Point(12, 364);
+            this.lblTotalTime.Location = new System.Drawing.Point(12, 397);
             this.lblTotalTime.Name = "lblTotalTime";
             this.lblTotalTime.Size = new System.Drawing.Size(65, 12);
             this.lblTotalTime.TabIndex = 11;
@@ -102,7 +106,7 @@
             // 
             this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(209, 364);
+            this.linkLabel1.Location = new System.Drawing.Point(209, 397);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(383, 12);
             this.linkLabel1.TabIndex = 29;
@@ -127,15 +131,71 @@
             this.ddlNewDb.Size = new System.Drawing.Size(174, 20);
             this.ddlNewDb.TabIndex = 30;
             // 
+            // xhkOutComment
+            // 
+            this.xhkOutComment.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.xhkOutComment.AutoSize = true;
+            this.xhkOutComment.Location = new System.Drawing.Point(82, 47);
+            this.xhkOutComment.Margin = new System.Windows.Forms.Padding(2);
+            this.xhkOutComment.Name = "xhkOutComment";
+            this.xhkOutComment.Size = new System.Drawing.Size(72, 16);
+            this.xhkOutComment.TabIndex = 10;
+            this.xhkOutComment.Text = "输出注释";
+            this.xhkOutComment.UseVisualStyleBackColor = true;
+            // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 48);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(65, 12);
+            this.label1.TabIndex = 11;
+            this.label1.Tag = "配置：";
+            this.label1.Text = "输出配置：";
+            // 
+            // chkOutDeleteSql
+            // 
+            this.chkOutDeleteSql.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.chkOutDeleteSql.AutoSize = true;
+            this.chkOutDeleteSql.Checked = true;
+            this.chkOutDeleteSql.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkOutDeleteSql.Location = new System.Drawing.Point(159, 47);
+            this.chkOutDeleteSql.Margin = new System.Windows.Forms.Padding(2);
+            this.chkOutDeleteSql.Name = "chkOutDeleteSql";
+            this.chkOutDeleteSql.Size = new System.Drawing.Size(96, 16);
+            this.chkOutDeleteSql.TabIndex = 10;
+            this.chkOutDeleteSql.Text = "输出删除语句";
+            this.chkOutDeleteSql.UseVisualStyleBackColor = true;
+            this.chkOutDeleteSql.CheckedChanged += new System.EventHandler(this.chkOutDeleteSql_CheckedChanged);
+            // 
+            // chkOutDeleteSqlIsCommon
+            // 
+            this.chkOutDeleteSqlIsCommon.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.chkOutDeleteSqlIsCommon.AutoSize = true;
+            this.chkOutDeleteSqlIsCommon.Checked = true;
+            this.chkOutDeleteSqlIsCommon.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkOutDeleteSqlIsCommon.Location = new System.Drawing.Point(262, 47);
+            this.chkOutDeleteSqlIsCommon.Margin = new System.Windows.Forms.Padding(2);
+            this.chkOutDeleteSqlIsCommon.Name = "chkOutDeleteSqlIsCommon";
+            this.chkOutDeleteSqlIsCommon.Size = new System.Drawing.Size(132, 16);
+            this.chkOutDeleteSqlIsCommon.TabIndex = 10;
+            this.chkOutDeleteSqlIsCommon.Text = "删除语句以注释输出";
+            this.chkOutDeleteSqlIsCommon.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(600, 381);
+            this.ClientSize = new System.Drawing.Size(600, 414);
             this.Controls.Add(this.ddlNewDb);
             this.Controls.Add(this.ddlOldDb);
             this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.lblTotalTime);
+            this.Controls.Add(this.chkOutDeleteSqlIsCommon);
+            this.Controls.Add(this.chkOutDeleteSql);
+            this.Controls.Add(this.xhkOutComment);
             this.Controls.Add(this.cheComm);
             this.Controls.Add(this.RtxResult);
             this.Controls.Add(this.btnTh);
@@ -163,6 +223,10 @@
         private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.ComboBox ddlOldDb;
         private System.Windows.Forms.ComboBox ddlNewDb;
+        private System.Windows.Forms.CheckBox xhkOutComment;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox chkOutDeleteSql;
+        private System.Windows.Forms.CheckBox chkOutDeleteSqlIsCommon;
     }
 }
 

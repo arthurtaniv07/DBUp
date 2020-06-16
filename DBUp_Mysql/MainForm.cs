@@ -230,6 +230,9 @@ namespace DBUp_Mysql
         {
 
             cs.CheckCommon = this.cheComm.Checked;
+            cs.OutputComment = xhkOutComment.Checked;
+            cs.OutputDeleteSql = chkOutDeleteSql.Checked;
+            cs.OutputDeleteSqlIsCommon = chkOutDeleteSqlIsCommon.Checked;
 
 
             startTime = DateTime.Now;
@@ -873,6 +876,12 @@ namespace DBUp_Mysql
         {
             // 彻底的退出
             Environment.Exit(0);
+        }
+
+        private void chkOutDeleteSql_CheckedChanged(object sender, EventArgs e)
+        {
+            var val = this.chkOutDeleteSql.Checked;
+            this.chkOutDeleteSqlIsCommon.Visible = val;
         }
     }
 
