@@ -764,7 +764,28 @@ namespace DBUp_Mysql
         private const string _ADD_VIEW_SQL = "{0}\n";
         public string GetAddViewSql(string sql)
         {
-            return string.Format(_ADD_VIEW_SQL, sql);
+            string flagTypeStr = "VIEW";
+
+            string rel = string.Format(_ADD_VIEW_SQL, sql);
+
+
+            if (rel.IndexOf("CREATE ") > -1 && rel.IndexOf(" DEFINER=") > -1 && rel.IndexOf(flagTypeStr) > 0)
+                rel = "CREATE " + rel.Substring(rel.IndexOf(flagTypeStr));
+            return rel;
+        }
+
+
+        private const string _EDIT_VIEW_SQL = "{0}\n";
+        public string GetEditViewSql(string sql)
+        {
+            string flagTypeStr = "VIEW";
+
+            string rel = string.Format(_EDIT_VIEW_SQL, sql);
+
+
+            if (rel.IndexOf("CREATE ") > -1 && rel.IndexOf(" DEFINER=") > -1 && rel.IndexOf(flagTypeStr) > 0)
+                rel = "ALTER " + rel.Substring(rel.IndexOf(flagTypeStr));
+            return rel;
         }
         #endregion
 

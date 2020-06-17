@@ -803,15 +803,23 @@ namespace DBUp_Mysql
                     //避免DEFINER 和注释产生影响
                     string oldSql = oldTableInfo.CreateSQL;//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + oldTableInfo.Name + "`"));
                     string newSql = newTableInfo.CreateSQL;//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + newTableInfo.Name + "`"));
+
+
+                    string flagTypeStr = "VIEW";
+
+                    //忽略DEFINER 以及 SQL SECURITY
+                    if (oldSql.IndexOf("CREATE ") > -1 && oldSql.IndexOf(" DEFINER=") > -1 && oldSql.IndexOf(flagTypeStr) > 0)
+                        oldSql = "CREATE " + oldSql.Substring(oldSql.IndexOf(flagTypeStr));
+                    if (newSql.IndexOf("CREATE ") > -1 && newSql.IndexOf(" DEFINER=") > -1 && newSql.IndexOf(flagTypeStr) > 0)
+                        newSql = "CREATE " + newSql.Substring(newSql.IndexOf(flagTypeStr));
+
                     if (!oldSql.Equals(newSql))
                     {
                         //AppendLine("  内容有变化\n", OutputType.Comment);
                         Output("  内容有变化\n", OutputType.Comment, setting, SqlType.Common);
-                        string dropViewSql = dHelper.GetDropViewSql(tableName);
-                        OutputText(dropViewSql, OutputType.Sql);
                         //OutputText(string.Format("生成创建{0}视图的SQL\n", tableName), OutputType.Comment);
-                        Output(string.Format("生成创建{0}视图的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
-                        string addViewSql = dHelper.GetAddViewSql(newItems[tableName].CreateSQL);
+                        Output(string.Format("生成修改{0}视图的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
+                        string addViewSql = dHelper.GetEditViewSql(newItems[tableName].CreateSQL);
                         OutputText(addViewSql, OutputType.Sql);
                     }
 
