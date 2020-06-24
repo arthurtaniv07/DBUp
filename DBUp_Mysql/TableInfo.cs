@@ -22,6 +22,12 @@ namespace DBUp_Mysql
         public string Comment { get; set; }
         // 校对集
         public string Collation { get; set; }
+
+        /// <summary>
+        /// 创建表的SQL
+        /// </summary>
+        public string CreateSql { get; set; }
+
         // 所有列信息（key：列名， value：列信息）
         public SortedDictionary<string, ColumnInfo> AllColumnInfo { get; set; }
         /// <summary>
@@ -43,6 +49,8 @@ namespace DBUp_Mysql
             IndexInfo = new Dictionary<string, TableIndex>();
             TableNames = new List<string>();
         }
+
+
     }
 
     /// <summary>
@@ -234,6 +242,52 @@ namespace DBUp_Mysql
         public bool IsAutoIncrement { get; set; }
         // 默认值
         public string DefaultValue { get; set; }
+        /// <summary>
+        /// 是否是虚拟列 5.7及以上版本支持
+        /// </summary>
+        public VirtualInfo Virtual { get; set; }
+    }
+
+    public class VirtualInfo
+    {
+        public VirtualType VirtualType { get; set; }
+        /// <summary>
+        /// 表达式
+        /// </summary>
+        public string Val { get; set; }
+        /// <summary>
+        /// 永远生成
+        /// </summary>
+        public bool IsForever { get; set; }
+        /// <summary>
+        /// 二进制
+        /// </summary>
+        public bool IsBinary { get; set; }
+    }
+    public enum VirtualType
+    {
+        NULL,
+        STORED,
+        VIRTUAL
+    }
+
+
+
+    public class TableDescInfo
+    {
+        public string Field { get; set; }
+        public string Type { get; set; }
+        public string Null { get; set; }
+        public string Key { get; set; }
+        public string Default { get; set; }
+        public string Extra { get; set; }
+    }
+    public struct TableDescInfoConst
+    {
+        public const string VIRTUAL = "VIRTUAL GENERATED";
+        public const string AUTOINCREMENT = "auto_increment";
+        public const string YES = "YES";
+        public const string NO = "NO";
     }
 
     /// <summary>

@@ -249,6 +249,8 @@ namespace DBUp_Mysql
             TableInfo tableInfo = new TableInfo();
             // Schema名
             tableInfo.SchemaName = _SchemaName;
+            //创建表的SQL 
+            tableInfo.CreateSql = GetCreateTableSql(tableName);
             // 表名
             tableInfo.Name = tableName;
             // 表注释（注意转义注释中的换行）
@@ -345,9 +347,11 @@ namespace DBUp_Mysql
             DataTable dtColumnInfo = _GetAllColumnInfo(tableName);
             if (dtColumnInfo != null)
             {
+                var tableDesc = GetTableDesc(tableName);
                 int columnCount = dtColumnInfo.Rows.Count;
                 for (int i = 0; i < columnCount; ++i)
                 {
+
                     ColumnInfo columnInfo = new ColumnInfo();
                     // 表名
                     columnInfo.TableName = tableName;
@@ -378,21 +382,67 @@ namespace DBUp_Mysql
                         if (columnKey.IndexOf("auto_increment", StringComparison.CurrentCultureIgnoreCase) != -1)
                             columnInfo.IsAutoIncrement = true;
                     }
+
+
+                    TableDescInfo descInfo = tableDesc.FirstOrDefault(f => string.Equals(f.Field, columnInfo.ColumnName, StringComparison.OrdinalIgnoreCase));
+
                     // 是否非空
-                    columnInfo.IsNotEmpty = dtColumnInfo.Rows[i]["IS_NULLABLE"].ToString().Equals("NO", StringComparison.CurrentCultureIgnoreCase);
+                    //columnInfo.IsNotEmpty = dtColumnInfo.Rows[i]["IS_NULLABLE"].ToString().Equals("NO", StringComparison.CurrentCultureIgnoreCase);
+                    columnInfo.IsNotEmpty = string.Equals(descInfo.Null, TableDescInfoConst.YES, StringComparison.OrdinalIgnoreCase) == false;
                     // 默认值
                     object defaultValue = dtColumnInfo.Rows[i]["COLUMN_DEFAULT"];
                     string defaultValueString = _GetDatabaseValueString(defaultValue);
                     columnInfo.DefaultValue = defaultValueString;
+
+
 
                     tableInfo.AllColumnInfo.Add(columnInfo.ColumnName, columnInfo);
                     tableInfo.TableNames.Add(columnInfo.ColumnName);
                 }
             }
 
+            //if (string.Equals(tableName, "pos_discountvoucher_detail", StringComparison.OrdinalIgnoreCase))
+            //{
+            //    int aaa = 0;
+            //}
+            
+            //虚拟列信息
+            var virtralInfo = GetTableVirtralInfo(tableInfo.CreateSql, tableInfo.AllColumnInfo.Keys.ToList());
+            foreach (var columnInfo in tableInfo.AllColumnInfo.Values)
+            {
+                columnInfo.Virtual = virtralInfo.ContainsKey(columnInfo.ColumnName) ? virtralInfo[columnInfo.ColumnName] : null;
+            }
+
+            //处理进度
             GetDBTableInfohander(tableName, TabsCount, TabsInx);
             return tableInfo;
         }
+
+        private const string _SELECT_TABLE_DESC_SQL = "desc {0};";
+        private List<TableDescInfo> GetTableDesc(string tableName)
+        {
+            MySqlCommand cmd = new MySqlCommand(string.Format(_SELECT_TABLE_DESC_SQL, tableName), Conn);
+            DataTable dt = _ExecuteSqlCommand(cmd);
+            if (dt == null || dt.Rows.Count == 0)
+                return null;
+
+            List<TableDescInfo> rel = new List<TableDescInfo>();
+
+            foreach (DataRow item in dt.Rows)
+            {
+                rel.Add(new TableDescInfo()
+                {
+                    Default = item["Default"] + "",
+                    Extra = item["Extra"] + "",
+                    Field = item["Field"] + "",
+                    Key = item["Key"] + "",
+                    Null = item["Null"] + "",
+                    Type = item["Type"] + ""
+                });
+            }
+            return rel;
+        }
+
         private const string _SELECT_TABLE_INFO_SQL = "SELECT {0} FROM information_schema.TABLES WHERE TABLE_SCHEMA = '{1}' AND TABLE_NAME = '{2}';";
         /// <summary>
         /// 获取某张表的某个属性
@@ -462,6 +512,105 @@ namespace DBUp_Mysql
             return indexInfo;
         }
 
+
+        public Dictionary<string, VirtualInfo> GetTableVirtralInfo(string createTableSql, List<string> cols)
+        {
+            /*
+CREATE TABLE `test_arthurtable` (
+  `Id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主鍵',
+  `DiscountrollId` int(11) NOT NULL COMMENT '优惠卷编号',
+  `DiscountrollCode` varchar(100) NOT NULL COMMENT '优惠券码',
+  `StartTime` datetime DEFAULT NULL COMMENT '可用开始时间',
+  `EndTime` datetime DEFAULT NULL COMMENT '可用结束时间',
+  `MemberId` varchar(200) DEFAULT NULL COMMENT '会员编号',
+  `Phone` varchar(50) DEFAULT NULL COMMENT '电话',
+  `Email` varchar(100) DEFAULT NULL COMMENT '电邮',
+  `Status` varchar(50) DEFAULT 'NotReceived' COMMENT 'NotReceived(未领取), Received(已領取), Used(已使用), Expired(已過期), Invalid(已失效)',
+  `UpdateTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+  `TimeStamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `PromotionMethods` varchar(100) DEFAULT NULL COMMENT '推廣方式：商家派發(Merchant)，會員領取(Member)，微信卡券 ()购买（buy）。',
+  `Money` float DEFAULT '0' COMMENT '金額',
+  `Integral` int(11) DEFAULT '0' COMMENT '積分',
+  `ForeignKey` int(11) DEFAULT NULL,
+  `PhoneVirtual` varchar(50) GENERATED ALWAYS AS (reverse(`Phone`)) VIRTUAL,
+  PRIMARY KEY (`Id`),
+  KEY `idx_DiscountrollId` (`DiscountrollId`),
+  KEY `comm_upTime` (`UpdateTime`),
+  KEY `DiscountrollCode` (`DiscountrollCode`),
+  KEY `ForeignKey` (`ForeignKey`),
+  KEY `idx_PromotionMethods` (`PromotionMethods`),
+  KEY `MemberId` (`MemberId`),
+  KEY `Phone` (`Phone`),
+  KEY `Email` (`Email`),
+  KEY `Status` (`Status`),
+  KEY `StartTime` (`StartTime`),
+  KEY `EndTime` (`EndTime`),
+  KEY `PhoneVirtual` (`PhoneVirtual`)
+) ;
+*/
+            /*
+             GENERATED ALWAYS:永远生成
+             BINARY：二进制
+             STORED/VIRTUAL:虚拟类型
+                         */
+            Dictionary<string, VirtualInfo> rel = new Dictionary<string, VirtualInfo>();
+            var newLineChar = "\n";
+            if (createTableSql.IndexOf(newLineChar) < 0)
+            {
+                newLineChar = "\r\n";
+                if (createTableSql.IndexOf(newLineChar) < 0)
+                {
+                    newLineChar = "";
+                }
+            }
+            if (newLineChar == "")
+            {
+                //暂没有实现
+                //去掉注释部分 ，使用,分隔
+            }
+            else
+            {
+                var lineArr = createTableSql.Split(new string[] { newLineChar }, StringSplitOptions.None);
+                foreach (var line in lineArr)
+                {
+                    var str = line;
+                    str = str.Trim().Trim('\t').Trim();
+                    if (!str.StartsWith("`")) continue;
+
+                    string currColInfo = null;
+                    foreach (var colName in cols)
+                    {
+                        if (!str.StartsWith("`" + colName + "`") || !str.Contains(" AS ")) continue;
+                        currColInfo = colName;
+                        break;
+                    }
+                    if (currColInfo == null) continue;
+
+                    //获取表达式
+                    var valTag = " AS ";
+                    var val = line.Substring(line.IndexOf(valTag) + valTag.Length).TrimEnd(',');//(reverse(`Phone`)) VIRTUAL
+                    val = val.Substring(0, val.IndexOf(" "));//(reverse(`Phone`))
+                    val = val.Substring(1, val.Length - 2);//reverse(`Phone`)
+
+
+
+                    VirtualInfo virtualInfo = new VirtualInfo();
+                    virtualInfo.IsForever = line.Contains(" GENERATED ALWAYS ");
+                    virtualInfo.IsBinary = line.Contains(" BINARY ");
+                    virtualInfo.Val = val;
+                    virtualInfo.VirtualType = line.Contains(" STORED") ? VirtualType.STORED : (
+                            line.Contains(" VIRTUAL") ? VirtualType.VIRTUAL : VirtualType.NULL
+                        );
+                    rel.Add(currColInfo, virtualInfo);
+
+
+                }
+            }
+
+            return rel;
+        }
+
+
         private const string _SELECT_COLUMN_INFO_SQL = "SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{1}' ORDER BY ORDINAL_POSITION ASC;";
         /// <summary>
         /// 获取所有列信息
@@ -507,7 +656,7 @@ namespace DBUp_Mysql
 
         private const string _SHOW_CREATE_TABLE_SQL = "SHOW CREATE TABLE {0}";
         /// <summary>
-        /// 获取某张表的建表SQL
+        /// 获取某张表的建表SQL 获取创建表的sql
         /// </summary>
         public string GetCreateTableSql(string tableName)
         {
@@ -539,44 +688,76 @@ namespace DBUp_Mysql
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_COLUMN_SQL, columnName));
         }
-        private const string _ADD_COLUMN_SQL = "ADD COLUMN `{0}` {1} {2}{3} COMMENT '{4}'{5};\n";
+        private const string _ADD_COLUMN_SQL = "ADD COLUMN {0};\n";
         /// <summary>
         /// 获取添加列的SQL
         /// </summary>
         public string GetAddTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
-            string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
-            // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
-            string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
-            string offStr = "";
-            if (!string.IsNullOrWhiteSpace(offset))
-                offStr = offset.ToUpper() == "FIRST" ? " " + offset : string.Format(" {0} `{1}`", offset, fieldName);
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_ADD_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment, offStr));
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
+                    string.Format(_ADD_COLUMN_SQL, GetChangeOrAddTableColumnSql(tableName, columnInfo, offset, fieldName))
+                );
         }
 
-        private const string _CHANGE_COLUMN_SORT_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} {4};\n";
+        private const string _CHANGE_COLUMN_SORT_SQL = "CHANGE COLUMN {0};\n";
         public string GetModifySort(string tableName, ColumnInfo columnInfo, string offset, string fieldName)
         {
-            string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
-            // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
-            string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
-            string offStr = offset.ToUpper() == "FIRST" ? offset : string.Format("{0} `{1}`", offset, fieldName);
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SORT_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, offStr));
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
+                string.Format(_CHANGE_COLUMN_SORT_SQL, GetChangeOrAddTableColumnSql(tableName, columnInfo, offset, fieldName))
+            );
         }
 
-        private const string _CHANGE_COLUMN_SQL = "CHANGE COLUMN `{0}` `{0}` {1} {2}{3} COMMENT '{4}'{5};\n";
+        private const string _CHANGE_COLUMN_SQL = "CHANGE COLUMN {0};\n";
         /// <summary>
         /// 获取修改列的SQL
         /// </summary>
         public string GetChangeTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
+            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
+                  string.Format(_CHANGE_COLUMN_SQL, GetChangeOrAddTableColumnSql(tableName, columnInfo, offset, fieldName))
+                );
+        }
+
+        private const string _ChangeOrAddTableColumnSql = " `{0}` {1} {2}{3} COMMENT '{4}'{5}";
+        private string GetChangeOrAddTableColumnSql(string tableName, ColumnInfo columnInfo, string offset, string fieldName)
+        {
+            /*
+ALTER TABLE `easesales_test`.`test_arthurtable` 
+MODIFY COLUMN `PhoneVirtual` varchar(50) BINARY CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci GENERATED ALWAYS AS (reverse(`Phone`)) VIRTUAL NULL AFTER `ForeignKey`;
+ALTER TABLE `easesales_test`.`test_arthurtable` 
+MODIFY COLUMN `PhoneVirtual` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci AS (reverse(`Phone`)) VIRTUAL NULL AFTER `ForeignKey`;
+*/
+            /*
+             GENERATED ALWAYS:永远生成
+             BINARY：二进制
+             STORED/VIRTUAL:虚拟类型
+                         */
             string notEmptyString = columnInfo.IsNotEmpty == true ? "NOT NULL" : "NULL";
             // 注意如果列设为NOT NULL，就不允许设置默认值为NULL
             string defaultValue = columnInfo.DefaultValue.Equals("NULL") ? string.Empty : string.Concat(" DEFAULT ", columnInfo.DefaultValue);
             string offStr = "";
             if (!string.IsNullOrWhiteSpace(offset))
                 offStr = offset.ToUpper() == "FIRST" ? " " + offset : string.Format(" {0} `{1}`", offset, fieldName);
-            return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_CHANGE_COLUMN_SQL, columnInfo.ColumnName, columnInfo.DataType, notEmptyString, defaultValue, columnInfo.Comment, offStr));
+
+            if (columnInfo.Virtual != null)
+            {
+
+                string _ChangeOrAddTableColumnSql2 = " `{0}` {1} AS ({2}) {3} {4} " + notEmptyString + offStr;
+                return string.Format(_ChangeOrAddTableColumnSql2,
+                    columnInfo.ColumnName,//0
+                    columnInfo.DataType + (columnInfo.Virtual.IsBinary ? " BINARY" : "") + (columnInfo.Virtual.IsForever ? " GENERATED ALWAYS" : ""),//1
+                    columnInfo.Virtual.Val,//2
+                    columnInfo.Virtual.VirtualType.ToString(),//3
+                    (columnInfo.Comment == null ? "" : $" COMMENT '{columnInfo.Comment}'")
+                    );
+            }
+            return string.Format(_ChangeOrAddTableColumnSql,
+                columnInfo.ColumnName,//0
+                columnInfo.DataType,//1
+                notEmptyString,//2
+                defaultValue,//3
+                columnInfo.Comment,//4
+                offStr);//5
         }
 
         private const string _DROP_PRIMARY_KEY_SQL = "DROP PRIMARY KEY ;\n";

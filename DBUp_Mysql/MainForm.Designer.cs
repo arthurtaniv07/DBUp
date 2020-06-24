@@ -48,7 +48,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCompare.Location = new System.Drawing.Point(10, 71);
             this.btnCompare.Name = "btnCompare";
-            this.btnCompare.Size = new System.Drawing.Size(580, 35);
+            this.btnCompare.Size = new System.Drawing.Size(748, 35);
             this.btnCompare.TabIndex = 8;
             this.btnCompare.Text = "对比";
             this.btnCompare.UseVisualStyleBackColor = true;
@@ -62,7 +62,7 @@
             this.RtxResult.Location = new System.Drawing.Point(10, 111);
             this.RtxResult.Margin = new System.Windows.Forms.Padding(2);
             this.RtxResult.Name = "RtxResult";
-            this.RtxResult.Size = new System.Drawing.Size(582, 281);
+            this.RtxResult.Size = new System.Drawing.Size(750, 281);
             this.RtxResult.TabIndex = 9;
             this.RtxResult.Text = "";
             // 
@@ -70,7 +70,7 @@
             // 
             this.cheComm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cheComm.AutoSize = true;
-            this.cheComm.Location = new System.Drawing.Point(414, 19);
+            this.cheComm.Location = new System.Drawing.Point(582, 19);
             this.cheComm.Margin = new System.Windows.Forms.Padding(2);
             this.cheComm.Name = "cheComm";
             this.cheComm.Size = new System.Drawing.Size(72, 16);
@@ -93,7 +93,7 @@
             // btnTh
             // 
             this.btnTh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTh.Location = new System.Drawing.Point(517, 10);
+            this.btnTh.Location = new System.Drawing.Point(685, 10);
             this.btnTh.Name = "btnTh";
             this.btnTh.Size = new System.Drawing.Size(71, 28);
             this.btnTh.TabIndex = 8;
@@ -106,7 +106,7 @@
             // 
             this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(209, 397);
+            this.linkLabel1.Location = new System.Drawing.Point(377, 397);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(383, 12);
             this.linkLabel1.TabIndex = 29;
@@ -119,21 +119,20 @@
             this.ddlOldDb.FormattingEnabled = true;
             this.ddlOldDb.Location = new System.Drawing.Point(12, 15);
             this.ddlOldDb.Name = "ddlOldDb";
-            this.ddlOldDb.Size = new System.Drawing.Size(174, 20);
+            this.ddlOldDb.Size = new System.Drawing.Size(244, 20);
             this.ddlOldDb.TabIndex = 30;
             // 
             // ddlNewDb
             // 
             this.ddlNewDb.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ddlNewDb.FormattingEnabled = true;
-            this.ddlNewDb.Location = new System.Drawing.Point(194, 15);
+            this.ddlNewDb.Location = new System.Drawing.Point(282, 15);
             this.ddlNewDb.Name = "ddlNewDb";
-            this.ddlNewDb.Size = new System.Drawing.Size(174, 20);
+            this.ddlNewDb.Size = new System.Drawing.Size(247, 20);
             this.ddlNewDb.TabIndex = 30;
             // 
             // xhkOutComment
             // 
-            this.xhkOutComment.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.xhkOutComment.AutoSize = true;
             this.xhkOutComment.Location = new System.Drawing.Point(82, 47);
             this.xhkOutComment.Margin = new System.Windows.Forms.Padding(2);
@@ -145,7 +144,6 @@
             // 
             // label1
             // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(12, 48);
             this.label1.Name = "label1";
@@ -156,7 +154,6 @@
             // 
             // chkOutDeleteSql
             // 
-            this.chkOutDeleteSql.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkOutDeleteSql.AutoSize = true;
             this.chkOutDeleteSql.Checked = true;
             this.chkOutDeleteSql.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -171,7 +168,6 @@
             // 
             // chkOutDeleteSqlIsCommon
             // 
-            this.chkOutDeleteSqlIsCommon.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkOutDeleteSqlIsCommon.AutoSize = true;
             this.chkOutDeleteSqlIsCommon.Checked = true;
             this.chkOutDeleteSqlIsCommon.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -187,7 +183,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(600, 414);
+            this.ClientSize = new System.Drawing.Size(768, 414);
             this.Controls.Add(this.ddlNewDb);
             this.Controls.Add(this.ddlOldDb);
             this.Controls.Add(this.linkLabel1);

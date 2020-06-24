@@ -74,10 +74,25 @@ namespace DBUp_Mysql
             if (oldInx < 0 || newInx < 0)
             {
                 if (this.ddlOldDb.Items.Count > 0) this.ddlOldDb.SelectedIndex = 0;
-                if (this.ddlOldDb.Items.Count > 0) this.ddlNewDb.SelectedIndex = 0;
+                if (this.ddlNewDb.Items.Count > 0) this.ddlNewDb.SelectedIndex = 0;
             }
 
             #endregion
+
+            #region 加载数据文件
+
+            var dirNames = GetDirNameList("/DataSourceFile");
+            if (dirNames.Count > 0)
+            {
+                foreach (var item in dirNames)
+                {
+                    this.ddlOldDb.Items.Add("/" + item);
+                    this.ddlNewDb.Items.Add("/" + item);
+                }
+            }
+
+            #endregion
+
 
             SetPathSetting(oldpathCs, "old");
             SetPathSetting(newpathCs, "new");
@@ -137,14 +152,33 @@ namespace DBUp_Mysql
             }
             if (this.ddlOldDb.SelectedItem.ToString() == this.ddlNewDb.SelectedItem.ToString())
             {
+
                 MessageBox.Show("新旧数据库不能重复", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            newConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ProviderName;
-            oldConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ProviderName;
 
-            oldConnString = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ConnectionString;
-            newConnString = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ConnectionString;
+            oldConnString = "";
+            newConnString = "";
+
+            if (this.ddlNewDb.SelectedItem.ToString().StartsWith("/"))
+            {
+                newConnString = this.ddlNewDb.SelectedItem.ToString();
+            }
+            else
+            {
+                newConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ProviderName;
+                newConnString = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ConnectionString;
+            }
+
+            if (this.ddlOldDb.SelectedItem.ToString().StartsWith("/"))
+            {
+                oldConnString = this.ddlOldDb.SelectedItem.ToString();
+            }
+            else
+            {
+                oldConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ProviderName;
+                oldConnString = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ConnectionString;
+            }
             //从配置文件加载Setting
             if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
             {
@@ -252,6 +286,39 @@ namespace DBUp_Mysql
             }
         }
 
+        public string GetDirFullPath(string path, bool isCreate = true)
+        {
+
+            if (!path.Contains(":"))
+            {
+                if (!path.StartsWith("/"))
+                    path = "/" + path;
+            }
+
+            if (!path.EndsWith("/"))
+                path += "/";
+
+            string rel = path.Contains(":") ? path : Environment.CurrentDirectory + path;
+
+            if (isCreate && !Directory.Exists(rel))
+            {
+                Directory.CreateDirectory(rel);
+            }
+            return rel;
+        }
+
+        public List<string> GetDirNameList(string dirFullPath)
+        {
+            dirFullPath = GetDirFullPath(dirFullPath);
+            var aaa =new DirectoryInfo(dirFullPath);
+            List<string> rel = new List<string>();
+            foreach (var item in aaa.GetDirectories())
+            {
+                rel.Add(item.Name);
+            }
+            return rel;
+        }
+
         private void StartCompare()
         {
 
@@ -278,59 +345,76 @@ namespace DBUp_Mysql
 
 
 
-
-            using (helper = new MySqlOptionHelper(oldConnString))
+            if (oldConnString.StartsWith("/"))
             {
-                ////测试连接到数据库，以免报错
-                //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
-                //if (!helper.TestLine(10000))
-                //{
-                //    AppendOutputText("旧数据库连接失败\n", OutputType.Comment);
-                //    MessageBox.Show("旧数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    SetStatus(false);
-                //    return;
-                //}
-                //else
-                //{
-                //    AppendOutputText("旧数据库连接成功\n", OutputType.Comment);
-                //}
-
-
-                oldDbName = helper.DbName;
-                oldServerName = helper.Server;
-                oldConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
+                oldConn.ConnectionString = oldConnString;
             }
-            using (helper = new MySqlOptionHelper(newConnString))
+            else
             {
-                ////测试连接到数据库，以免报错
-                //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
-                //if (!helper.TestLine(10000))
-                //{
-                //    AppendOutputText("新数据库连接失败\n", OutputType.Comment);
-                //    MessageBox.Show("新数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //    SetStatus(false);
-                //    return;
-                //}
-                //else
-                //{
-                //    AppendOutputText("新数据库连接成功\n", OutputType.Comment);
-                //}
+                using (helper = new MySqlOptionHelper(oldConnString))
+                {
+                    ////测试连接到数据库，以免报错
+                    //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
+                    //if (!helper.TestLine(10000))
+                    //{
+                    //    AppendOutputText("旧数据库连接失败\n", OutputType.Comment);
+                    //    MessageBox.Show("旧数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    SetStatus(false);
+                    //    return;
+                    //}
+                    //else
+                    //{
+                    //    AppendOutputText("旧数据库连接成功\n", OutputType.Comment);
+                    //}
 
-                newDbName = helper.DbName;
-                newServerName = helper.Server;
-                newConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
+
+                    oldDbName = helper.DbName;
+                    oldServerName = helper.Server;
+                    oldConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
+                }
             }
+
+
+            if (newConnString.StartsWith("/"))
+            {
+                newConn.ConnectionString = newConnString;
+            }
+            else
+            {
+                using (helper = new MySqlOptionHelper(newConnString))
+                {
+                    ////测试连接到数据库，以免报错
+                    //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
+                    //if (!helper.TestLine(10000))
+                    //{
+                    //    AppendOutputText("新数据库连接失败\n", OutputType.Comment);
+                    //    MessageBox.Show("新数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //    SetStatus(false);
+                    //    return;
+                    //}
+                    //else
+                    //{
+                    //    AppendOutputText("新数据库连接成功\n", OutputType.Comment);
+                    //}
+
+                    newDbName = helper.DbName;
+                    newServerName = helper.Server;
+                    newConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
+                }
+            }
+
+
             AppendOutputText("\n", OutputType.None);
-            if (oldConn.ConnectionString == newConn.ConnectionString)
+            if (!oldConn.ConnectionString.StartsWith("/") && !newConn.ConnectionString.StartsWith("/") && oldConn.ConnectionString == newConn.ConnectionString)
             {
                 AppendOutputText("新旧数据库数据源一致 无需比较", OutputType.Error);
                 MessageBox.Show("结束对比：新旧数据库数据源一致 无需比较", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 SetStatus(false);
                 return;
             }
-            //int tempInx = 0;
+
             ////从网卡层面判断是否联网
-            //if (!Win32API.InternetGetConnectedState(ref tempInx, 0))
+            //if (!Win32API.InternetGetConnectedState(ref int tempInx, 0))
             //{
             //    AppendOutputText("请检查你的网络状态", OutputType.Error);
             //    MessageBox.Show("结束对比：请检查你的网络状态", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -338,17 +422,15 @@ namespace DBUp_Mysql
             //    return;
             //}
 
-            string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName);
-            if (!Directory.Exists(resultStr))
-            {
-                Directory.CreateDirectory(resultStr);
-            }
+            string resultStr = GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName));
 
             File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
 
-
-            //这里比较数据库的sqlmode
-            new CompareAndShowResultHelperBase().ShowDbDiff(oldConnString, newConnString);
+            if (!oldConn.ConnectionString.StartsWith("/") && !newConn.ConnectionString.StartsWith("/"))
+            {
+                //这里比较数据库的sqlmode
+                new CompareAndShowResultHelperBase().ShowDbDiff(oldConnString, newConnString);
+            }
 
 
             //var c = new CompareAndShowResultHelperFactory();
@@ -361,41 +443,89 @@ namespace DBUp_Mysql
                 TableCompareAndShowResultHelper viewHelper = new TableCompareAndShowResultHelper();
                 viewHelper.OutputText = AppendOutputText;
                 viewHelper.ReplaceLastLineText = ReplaceLastLineText;
-                if (cs.IsFileDataPath_Table == false)
+
+
+
+                #region 获取数据源
+
+                if (oldConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(oldConnString, oldpathCs.Tables, out oldTabs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
                 {
                     AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
                     if (viewHelper.GetInfoByDb(oldConnString, out oldTabs))
                         File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
                     else
                         tempBool = false;
-
+                }
+                if (newConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(newConnString, newpathCs.Tables, out newTabs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
+                {
+                    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
                     if (viewHelper.GetInfoByDb(newConnString, out newTabs))
                         File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
                     else
                         tempBool = false;
                 }
-                else
-                {
 
-                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Tables, out oldTabs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
 
-                    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Tables, out newTabs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
+                //if (cs.IsFileDataPath_Table == false)
+                //{
+                //    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
+                //    if (viewHelper.GetInfoByDb(oldConnString, out oldTabs))
+                //        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
+                //    else
+                //        tempBool = false;
+
+                //    if (viewHelper.GetInfoByDb(newConnString, out newTabs))
+                //        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
+                //    else
+                //        tempBool = false;
+                //}
+                //else
+                //{
+
+                //    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
+                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Tables, out oldTabs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+
+                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Tables, out newTabs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //}
+                #endregion
 
 
                 if (cs.IsDiff)
@@ -428,43 +558,90 @@ namespace DBUp_Mysql
                 ViewCompareAndShowResultHelper viewHelper = new ViewCompareAndShowResultHelper();
                 viewHelper.OutputText = AppendOutputText;
                 viewHelper.ReplaceLastLineText = ReplaceLastLineText;
-                if (cs.IsFileDataPath_View == false)
+
+                #region 获取数据源
+
+                if (oldConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(oldConnString, oldpathCs.Views, out views);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
                 {
                     AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
                     if (viewHelper.GetInfoByDb(oldConnString, out views))
                         File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
                     else
                         tempBool = false;
+                }
 
+                if (newConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(newConnString, newpathCs.Views, out newViews);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
+                {
+                    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
                     if (viewHelper.GetInfoByDb(newConnString, out newViews))
                         File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
                     else
                         tempBool = false;
-
                 }
-                else
-                {
 
 
-                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Views, out views);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
+                //if (cs.IsFileDataPath_View == false)
+                //{
+                //    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
+                //    if (viewHelper.GetInfoByDb(oldConnString, out views))
+                //        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
+                //    else
+                //        tempBool = false;
 
-                    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Views, out newViews);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
+                //    if (viewHelper.GetInfoByDb(newConnString, out newViews))
+                //        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
+                //    else
+                //        tempBool = false;
+
+                //}
+                //else
+                //{
+
+
+                //    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
+                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Views, out views);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+
+                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Views, out newViews);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //}
+                #endregion
 
                 if (cs.IsDiff)
                 {
@@ -494,41 +671,93 @@ namespace DBUp_Mysql
                 TrigCompareAndShowResultHelper trigHelper = new TrigCompareAndShowResultHelper();
                 trigHelper.OutputText = AppendOutputText;
                 trigHelper.ReplaceLastLineText = ReplaceLastLineText;
-                if (cs.IsFileDataPath_Trig == false)
+
+
+                #region 获取数据源
+
+
+                if (oldConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
+                    tempStt = trigHelper.GetInfoByFile(oldConnString, oldpathCs.Trigs, out tris);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
                 {
                     AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
                     if (trigHelper.GetInfoByDb(oldConnString, out tris))
                         File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
                     else
                         tempBool = false;
+                }
 
+                if (newConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
+                    tempStt = trigHelper.GetInfoByFile(newConnString, newpathCs.Trigs, out newTris);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
+                {
+                    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
                     if (trigHelper.GetInfoByDb(newConnString, out newTris))
                         File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
                     else
                         tempBool = false;
                 }
-                else
-                {
 
-                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Trigs, out tris);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
 
-                    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Trigs, out newTris);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
+
+                //if (cs.IsFileDataPath_Trig == false)
+                //{
+                //    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
+                //    if (trigHelper.GetInfoByDb(oldConnString, out tris))
+                //        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
+                //    else
+                //        tempBool = false;
+
+                //    if (trigHelper.GetInfoByDb(newConnString, out newTris))
+                //        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
+                //    else
+                //        tempBool = false;
+                //}
+                //else
+                //{
+
+                //    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
+                //    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Trigs, out tris);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+
+                //    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Trigs, out newTris);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //}
+                #endregion
+
+
 
                 if (cs.IsDiff)
                 {
@@ -561,42 +790,90 @@ namespace DBUp_Mysql
                 funcHelper.OutputText = AppendOutputText;
                 funcHelper.ReplaceLastLineText = ReplaceLastLineText;
 
-                if (cs.IsFileDataPath_Proc == false)
+
+                #region 获取数据源
+
+                if (oldConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(oldConnString, oldpathCs.Procs, out procs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
                 {
                     AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
                     if (funcHelper.GetInfoByDb(oldConnString, out procs))
                         File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
                     else
                         tempBool = false;
-
+                }
+                if (newConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(newConnString, newpathCs.Procs, out newProcs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
+                {
+                    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
                     if (funcHelper.GetInfoByDb(newConnString, out newProcs))
                         File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
                     else
                         tempBool = false;
-
-
                 }
-                else
-                {
-                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Procs, out procs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
 
-                    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Procs, out newProcs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
+
+                //if (cs.IsFileDataPath_Proc == false)
+                //{
+                //    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
+                //    if (funcHelper.GetInfoByDb(oldConnString, out procs))
+                //        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
+                //    else
+                //        tempBool = false;
+
+                //    if (funcHelper.GetInfoByDb(newConnString, out newProcs))
+                //        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
+                //    else
+                //        tempBool = false;
+
+
+                //}
+                //else
+                //{
+                //    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
+                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Procs, out procs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+
+                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Procs, out newProcs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //}
+
+
+                #endregion
 
                 if (cs.IsDiff)
                 {
@@ -628,39 +905,90 @@ namespace DBUp_Mysql
                 FuncCompareAndShowResultHelper funcHelper = new FuncCompareAndShowResultHelper();
                 funcHelper.OutputText = AppendOutputText;
                 funcHelper.ReplaceLastLineText = ReplaceLastLineText;
-                if (cs.IsFileDataPath_Func == false)
+
+
+                #region 获取数据源
+
+                if (oldConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(oldConnString, oldpathCs.Funcs, out funcs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
                 {
                     AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
                     if (funcHelper.GetInfoByDb(oldConnString, out funcs))
                         File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
                     else
                         tempBool = false;
+                }
 
+                if (newConnString.StartsWith("/"))
+                {
+                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(newConnString, newpathCs.Funcs, out newFuncs);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else
+                {
+                    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
                     if (funcHelper.GetInfoByDb(newConnString, out newFuncs))
                         File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
                     else
                         tempBool = false;
                 }
-                else
-                {
-                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Funcs, out funcs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Funcs, out newFuncs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
+
+
+
+                //if (cs.IsFileDataPath_Func == false)
+                //{
+                //    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
+                //    if (funcHelper.GetInfoByDb(oldConnString, out funcs))
+                //        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
+                //    else
+                //        tempBool = false;
+
+                //    if (funcHelper.GetInfoByDb(newConnString, out newFuncs))
+                //        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
+                //    else
+                //        tempBool = false;
+                //}
+                //else
+                //{
+                //    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
+                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Funcs, out funcs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Funcs, out newFuncs);
+                //    if (string.IsNullOrWhiteSpace(tempStt))
+                //        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
+                //    else
+                //    {
+                //        tempBool = false;
+                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                //    }
+                //}
+
+                #endregion
+
 
                 if (cs.IsDiff)
                 {

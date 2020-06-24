@@ -132,7 +132,7 @@ namespace DBUp_Mysql
             {
                 currDir = Environment.CurrentDirectory;
             }
-            string resultStr = currDir + string.Format("/result/{0}/{1}", dirName, fileName);
+            string resultStr = currDir + string.Format("/DataSourceFile/{0}/{1}", dirName.StartsWith("/") ? dirName.Substring(1) : dirName, fileName);
             if (!File.Exists(resultStr))
                 throw new Exception(string.Format("文件不存在（{0}/{1}）", dirName, fileName));
             return File.ReadAllText(resultStr);
@@ -277,20 +277,19 @@ namespace DBUp_Mysql
                 Output("==============================================\n", OutputType.Comment, setting, SqlType.Common);
                 //OutputText(string.Format("新版本数据库中新增以下表格：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment);
                 Output(string.Format("新版本数据库中新增以下表格：{0}\n", JoinString(addTableNames, ",")), OutputType.Comment, setting, SqlType.Common);
-                using (Helper = new MySqlOptionHelper(newConnStr))
+
+                foreach (string tableName in addTableNames)
                 {
-                    foreach (string tableName in addTableNames)
-                    {
-                        //OutputText(string.Format("生成创建{0}表的SQL\n", tableName), OutputType.Comment);
-                        Output(string.Format("生成创建{0}表的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
-                        // 通过MySQL提供的功能得到建表SQL
-                        var tabInfo = newItems[tableName];
-                        string createTableSql = Helper.GetCreateTableSql(tableName);
-                        OutputText(createTableSql, OutputType.Sql);
-                        //OutputText("\n", OutputType.None);
-                        Output("\n", OutputType.None, setting, SqlType.Common);
-                    }
+                    //OutputText(string.Format("生成创建{0}表的SQL\n", tableName), OutputType.Comment);
+                    Output(string.Format("生成创建{0}表的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
+                    // 通过MySQL提供的功能得到建表SQL
+                    var tabInfo = newItems[tableName];
+                    string createTableSql = tabInfo.CreateSql;
+                    AppendLine(createTableSql, OutputType.Sql);
+                    //OutputText("\n", OutputType.None);
+                    Output("\n", OutputType.None, setting, SqlType.Common);
                 }
+
             }
             // 对两版本中均存在的表格进行对比
             foreach (string tableName in newItems.Keys)
@@ -771,7 +770,7 @@ namespace DBUp_Mysql
                     //OutputText(string.Format("生成创建{0}视图的SQL\n", viewName), OutputType.Comment);
                     Output(string.Format("生成创建{0}视图的SQL\n", viewName), OutputType.Comment, setting, SqlType.Common);
                     string addViewSql = dHelper.GetAddViewSql(newItems[viewName].CreateSQL);
-                    OutputText(addViewSql, OutputType.Sql);
+                    AppendLine(addViewSql, OutputType.Sql);
                     //OutputText("\n", OutputType.None);
                     Output("\n", OutputType.None, setting, SqlType.Common);
                 }
@@ -820,7 +819,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}视图的SQL\n", tableName), OutputType.Comment);
                         Output(string.Format("生成修改{0}视图的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetEditViewSql(newItems[tableName].CreateSQL);
-                        OutputText(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql);
                     }
 
                     AppendLineToCtrl();
@@ -925,7 +924,7 @@ namespace DBUp_Mysql
                     //OutputText(string.Format("生成创建{0}触发器的SQL\n", viewName), OutputType.Comment);
                     Output(string.Format("生成创建{0}触发器的SQL\n", viewName), OutputType.Comment, setting, SqlType.Common);
                     string addViewSql = dHelper.GetAddTrisSql(newItems[viewName]);
-                    OutputText(addViewSql, OutputType.Sql);
+                    AppendLine(addViewSql, OutputType.Sql);
                     //OutputText("\n", OutputType.None);
                     Output("\n", OutputType.None, setting, SqlType.Common);
                 }
@@ -965,11 +964,11 @@ namespace DBUp_Mysql
                         //AppendLine("  触发器内容有变化\n", OutputType.Comment);
                         Output("  触发器内容有变化\n", OutputType.Comment, setting, SqlType.Common);
                         string dropViewSql = dHelper.GetDropTrisSql(tableName);
-                        OutputText(dropViewSql, OutputType.Sql);
+                        AppendLine(dropViewSql, OutputType.Sql);
                         //OutputText(string.Format("生成创建{0}触发器的SQL\n", tableName), OutputType.Comment);
                         Output(string.Format("生成创建{0}触发器的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddTrisSql(newItems[tableName]);
-                        OutputText(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
@@ -1122,7 +1121,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment);
                         Output(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddFuncSql(newItems[viewName]);
-                        OutputText(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
@@ -1134,7 +1133,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment);
                         Output(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddProcsSql(newItems[viewName]);
-                        OutputText(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
@@ -1218,22 +1217,22 @@ namespace DBUp_Mysql
                         if (isFun)
                         {
                             string dropViewSql = dHelper.GetDropFuncSql(tableName);
-                            OutputText(dropViewSql, OutputType.Sql);
+                            AppendLine(dropViewSql, OutputType.Sql);
                             //OutputText(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment);
                             Output(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment, setting, SqlType.Common);
                             string addViewSql = dHelper.GetAddFuncSql(newItems[tableName]);
-                            OutputText(addViewSql, OutputType.Sql);
+                            AppendLine(addViewSql, OutputType.Sql);
                             //OutputText("\n", OutputType.None);
                             Output("\n", OutputType.None, setting, SqlType.Common);
                         }
                         else
                         {
                             string dropViewSql = dHelper.GetDropProcsSql(tableName);
-                            OutputText(dropViewSql, OutputType.Sql);
+                            AppendLine(dropViewSql, OutputType.Sql);
                             //OutputText(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment);
                             Output(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment, setting, SqlType.Common);
                             string addViewSql = dHelper.GetAddProcsSql(newItems[tableName]);
-                            OutputText(addViewSql, OutputType.Sql);
+                            AppendLine(addViewSql, OutputType.Sql);
                             //OutputText("\n", OutputType.None);
                             Output("\n", OutputType.None, setting, SqlType.Common);
                         }
