@@ -157,7 +157,7 @@
             this.chkOutDeleteSql.AutoSize = true;
             this.chkOutDeleteSql.Checked = true;
             this.chkOutDeleteSql.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkOutDeleteSql.Location = new System.Drawing.Point(159, 47);
+            this.chkOutDeleteSql.Location = new System.Drawing.Point(169, 47);
             this.chkOutDeleteSql.Margin = new System.Windows.Forms.Padding(2);
             this.chkOutDeleteSql.Name = "chkOutDeleteSql";
             this.chkOutDeleteSql.Size = new System.Drawing.Size(96, 16);
@@ -171,7 +171,7 @@
             this.chkOutDeleteSqlIsCommon.AutoSize = true;
             this.chkOutDeleteSqlIsCommon.Checked = true;
             this.chkOutDeleteSqlIsCommon.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkOutDeleteSqlIsCommon.Location = new System.Drawing.Point(262, 47);
+            this.chkOutDeleteSqlIsCommon.Location = new System.Drawing.Point(282, 47);
             this.chkOutDeleteSqlIsCommon.Margin = new System.Windows.Forms.Padding(2);
             this.chkOutDeleteSqlIsCommon.Name = "chkOutDeleteSqlIsCommon";
             this.chkOutDeleteSqlIsCommon.Size = new System.Drawing.Size(132, 16);

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Collections;
 
 namespace DBUp_Mysql
 {
@@ -34,6 +35,21 @@ namespace DBUp_Mysql
         string newDbName = "";
         string oldServerName = "";
         string newServerName = "";
+        Dictionary<string, DBDataSource> sourceList = new Dictionary<string, DBDataSource>();
+        public void ReloadDataSource()
+        {
+            var dbSource = ConfigHelper.GetConnections();
+            var fileSourcce =  Tools.GetConnections();
+            sourceList.Clear();
+            foreach (var item in dbSource)
+            {
+                sourceList.Add(item.Key, item.Value);
+            }
+            foreach (var item in fileSourcce)
+            {
+                sourceList.Add(item.Key, item.Value);
+            }
+        }
         public MainForm()
         {
             InitializeComponent();
@@ -48,23 +64,25 @@ namespace DBUp_Mysql
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
-            //加载数据库链接
-            #region 加载数据库链接
-            var allConnection = ConfigurationManager.ConnectionStrings;
+            //加载数据源
+            #region 加载数据源
+
             int inx = -1;
             int oldInx = -1;
             int newInx = -1;
-            foreach (ConnectionStringSettings item in allConnection)
+            ReloadDataSource();
+            //this.ddlOldDb.DataSource = sourceList.Values;
+            foreach (var item in sourceList)
             {
                 inx++;
-                this.ddlOldDb.Items.Add(item.Name);
-                this.ddlNewDb.Items.Add(item.Name);
-                if ("old".Equals(item.Name, StringComparison.OrdinalIgnoreCase))
+                this.ddlOldDb.Items.Add(item.Key);
+                this.ddlNewDb.Items.Add(item.Key);
+                if ("old".Equals(item.Key, StringComparison.OrdinalIgnoreCase))
                 {
                     oldInx = inx;
-                    this.ddlOldDb.SelectedIndex =inx;
+                    this.ddlOldDb.SelectedIndex = inx;
                 }
-                else if("new".Equals(item.Name, StringComparison.OrdinalIgnoreCase))
+                else if ("new".Equals(item.Key, StringComparison.OrdinalIgnoreCase))
                 {
                     newInx = inx;
                     this.ddlNewDb.SelectedIndex = inx;
@@ -76,22 +94,8 @@ namespace DBUp_Mysql
                 if (this.ddlOldDb.Items.Count > 0) this.ddlOldDb.SelectedIndex = 0;
                 if (this.ddlNewDb.Items.Count > 0) this.ddlNewDb.SelectedIndex = 0;
             }
-
             #endregion
 
-            #region 加载数据文件
-
-            var dirNames = GetDirNameList("/DataSourceFile");
-            if (dirNames.Count > 0)
-            {
-                foreach (var item in dirNames)
-                {
-                    this.ddlOldDb.Items.Add("/" + item);
-                    this.ddlNewDb.Items.Add("/" + item);
-                }
-            }
-
-            #endregion
 
 
             SetPathSetting(oldpathCs, "old");
@@ -208,7 +212,7 @@ namespace DBUp_Mysql
                 //});
             }
         }
-        MySqlOptionHelper helper = null;
+        DBStructureHelper helper = null;
 
         Timer totalTime = null;
         /// <summary>
@@ -244,7 +248,7 @@ namespace DBUp_Mysql
             {
                 try
                 {
-
+                    SetStatus(false);
                     //St.StStack stExceptionStack = new St.StStack(0);
                     //string content = stExceptionStack.ToString();
                     string content = e.ToString();
@@ -286,38 +290,6 @@ namespace DBUp_Mysql
             }
         }
 
-        public string GetDirFullPath(string path, bool isCreate = true)
-        {
-
-            if (!path.Contains(":"))
-            {
-                if (!path.StartsWith("/"))
-                    path = "/" + path;
-            }
-
-            if (!path.EndsWith("/"))
-                path += "/";
-
-            string rel = path.Contains(":") ? path : Environment.CurrentDirectory + path;
-
-            if (isCreate && !Directory.Exists(rel))
-            {
-                Directory.CreateDirectory(rel);
-            }
-            return rel;
-        }
-
-        public List<string> GetDirNameList(string dirFullPath)
-        {
-            dirFullPath = GetDirFullPath(dirFullPath);
-            var aaa =new DirectoryInfo(dirFullPath);
-            List<string> rel = new List<string>();
-            foreach (var item in aaa.GetDirectories())
-            {
-                rel.Add(item.Name);
-            }
-            return rel;
-        }
 
         private void StartCompare()
         {
@@ -351,7 +323,7 @@ namespace DBUp_Mysql
             }
             else
             {
-                using (helper = new MySqlOptionHelper(oldConnString))
+                using (helper = new DBStructureHelper(oldConnString))
                 {
                     ////测试连接到数据库，以免报错
                     //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
@@ -381,7 +353,7 @@ namespace DBUp_Mysql
             }
             else
             {
-                using (helper = new MySqlOptionHelper(newConnString))
+                using (helper = new DBStructureHelper(newConnString))
                 {
                     ////测试连接到数据库，以免报错
                     //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
@@ -422,7 +394,7 @@ namespace DBUp_Mysql
             //    return;
             //}
 
-            string resultStr = GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName));
+            string resultStr = Tools.GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName));
 
             File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
 
@@ -1027,10 +999,7 @@ namespace DBUp_Mysql
 
         //定义更新输出的委托
         public delegate bool OutputTextHander(string text, OutputType type);
-        OutputTextHander appendOutputText;//追加
-        OutputTextHander replaceOutputText;//替换
         public delegate bool ClearTextHander();
-        ClearTextHander clearOutputText;//清空
 
         public bool ClearOutputText()
         {

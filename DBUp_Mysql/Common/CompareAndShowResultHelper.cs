@@ -71,9 +71,9 @@ namespace DBUp_Mysql
         }
 
 
-        public MySqlOptionHelper Helper { get; set; }
+        public DBStructureHelper Helper { get; set; }
 
-        public MySqlOptionHelper dHelper = new MySqlOptionHelper();
+        public DBStructureHelper dHelper = new DBStructureHelper();
 
         DateTime startTime=default(DateTime);
         public void SetLen(string currTabName, int tabCount, int i)
@@ -142,11 +142,11 @@ namespace DBUp_Mysql
         {
             DbModel oldInfo=null;
             DbModel newInfo = null;
-            using (Helper = new MySqlOptionHelper(oldConnStr))
+            using (Helper = new DBStructureHelper(oldConnStr))
             {
                 oldInfo = Helper.GetDbInfo();
             }
-            using (Helper = new MySqlOptionHelper(newConnStr))
+            using (Helper = new DBStructureHelper(newConnStr))
             {
                 newInfo = Helper.GetDbInfo();
             }
@@ -191,7 +191,7 @@ namespace DBUp_Mysql
         public bool GetInfoByDb(string connStr, out Dictionary<string, TableInfo> rel)
         {
             rel = new Dictionary<string, TableInfo>();
-            using (Helper = new MySqlOptionHelper(connStr))
+            using (Helper = new DBStructureHelper(connStr))
             {
                 if (Helper.Open())
                 {
@@ -681,7 +681,7 @@ namespace DBUp_Mysql
         public bool GetInfoByDb(string connStr, out Dictionary<string, ViewInfo> rel)
         {
             rel = new Dictionary<string, ViewInfo>();
-            using (Helper = new MySqlOptionHelper(connStr))
+            using (Helper = new DBStructureHelper(connStr))
             {
                 if (Helper.Open())
                 {
@@ -835,7 +835,7 @@ namespace DBUp_Mysql
         public bool GetInfoByDb(string connStr, out Dictionary<string, Trigger> rel)
         {
             rel = new Dictionary<string, Trigger>();
-            using (Helper = new MySqlOptionHelper(connStr))
+            using (Helper = new DBStructureHelper(connStr))
             {
                 if (Helper.Open())
                 {
@@ -999,7 +999,7 @@ namespace DBUp_Mysql
             List<Function> tempList;
             rel = new Dictionary<string, Function>();
             string errorMsg;
-            using (Helper=new MySqlOptionHelper(connStr))
+            using (Helper=new DBStructureHelper(connStr))
             {
                 Helper.Set_DbHander(SetLen);
                 if (Helper.Open())

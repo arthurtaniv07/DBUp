@@ -22,16 +22,6 @@ namespace DBUp_Mysql
         public bool IsSearFunc { get; set; } = true;
         public bool IsSearTri { get; set; } = true;
         public bool IsDiff { get; set; } = true;
-        /// <summary>
-        /// 如果有值 则从这个路径获取数据
-        /// </summary>
-        public string FileDataPath { get; set; }
-
-        public bool IsFileDataPath_Table { get; set; } = false;
-        public bool IsFileDataPath_View { get; set; } = false;
-        public bool IsFileDataPath_Trig { get; set; } = false;
-        public bool IsFileDataPath_Func { get; set; } = false;
-        public bool IsFileDataPath_Proc { get; set; } = false;
 
         /// <summary>
         /// 输出注释

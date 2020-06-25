@@ -6,11 +6,5 @@
     "IsSearProc": true,
     "IsSearFunc": true,
     "IsSearTri": true,
-    "IsDiff": true,
-    "FileDataPath": "20200319193028-easesales-easesales",
-    "IsFileDataPath_Table": false,
-    "IsFileDataPath_View": false,
-    "IsFileDataPath_Trig": false,
-    "IsFileDataPath_Func": false,
-    "IsFileDataPath_Proc": false
+    "IsDiff": true
   }

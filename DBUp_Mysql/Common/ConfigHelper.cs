@@ -77,5 +77,25 @@ namespace DBUp_Mysql
 
             return result;
         }
+        /// <summary>
+        /// 从配置文件获取数据源信息
+        /// </summary>
+        /// <returns></returns>
+        public static Dictionary<string, DBDataSource> GetConnections()
+        {
+            Dictionary<string, DBDataSource> rel = new Dictionary<string, DBDataSource>();
+            var allConnection = ConfigurationManager.ConnectionStrings;
+            foreach (ConnectionStringSettings item in allConnection)
+            {
+                rel.Add(item.Name, new DBDataSource()
+                {
+                    Key = item.Name,
+                    Type = DBDataSourceType.MySql,
+                    Value = item.ConnectionString,
+                    ProviderName = item.ProviderName
+                });
+            }
+            return rel;
+        }
     }
 }

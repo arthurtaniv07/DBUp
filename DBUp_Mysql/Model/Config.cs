@@ -7,7 +7,7 @@ namespace DBUp_Mysql
 {
     public class Config
     {
-        public string Ver { get; set; } = "V1.0";
+        public string Ver { get; set; } = "V1.1";
         public DBConnection OldConnection { get; set; }
         public DBConnection NewConnection { get; set; }
         public PathSetting OldPathSetting { get; set; }

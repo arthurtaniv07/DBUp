@@ -8,7 +8,7 @@ using System.Text;
 namespace DBUp_Mysql
 {
     public delegate void DBHander(string currDBName, int tabCount, int i);
-    public class MySqlOptionHelper : IDisposable
+    public class DBStructureHelper : IDisposable
     {
 
 
@@ -86,11 +86,11 @@ namespace DBUp_Mysql
                 return Conn.Database;
             }
         }
-        public MySqlOptionHelper(string connStr)
+        public DBStructureHelper(string connStr)
         {
             Conn = new MySqlConnection(connStr);
         }
-        public MySqlOptionHelper()
+        public DBStructureHelper()
         {
         }
         /// <summary>
@@ -182,10 +182,12 @@ namespace DBUp_Mysql
         /// </summary>
         private static DataTable _ExecuteSqlCommand(MySqlCommand cmd)
         {
-            MySqlDataAdapter da = new MySqlDataAdapter(cmd);
-            DataTable dt = new DataTable();
-            da.Fill(dt);
-            return dt;
+            using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
+            {
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                return dt;
+            }
         }
 
         private const string _SELECT_DBMODE_SQL = "select @@global.sql_mode;";
