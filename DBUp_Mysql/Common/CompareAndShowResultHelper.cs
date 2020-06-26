@@ -29,7 +29,7 @@ namespace DBUp_Mysql
         /// <param name="setting"></param>
         /// <param name="errorString"></param>
         /// <returns></returns>
-        bool CompareAndShow(Dictionary<string, T> oldItems, Dictionary<string, T> newItems, Setting setting, out string errorString, string newConnStr = null);
+        bool CompareAndShow(Dictionary<string, T> oldItems, Dictionary<string, T> newItems, Setting setting, out string errorString);
     }
     public delegate bool OutPutTextHander(string str, OutputType type = OutputType.Comment);
     public delegate string GetResultTextHander();
@@ -91,17 +91,6 @@ namespace DBUp_Mysql
         }
 
 
-        public Dictionary<string, T> GetInfo<T>(string dirName, string fileName) where T : DBInfo
-        {
-            Dictionary<string, T> rel = new Dictionary<string, T>();
-            string resultStr = ReadFileString(dirName, fileName);
-            List<T> newtabRel = JsonConvert.DeserializeObject<List<T>>(resultStr);
-            foreach (var tab in newtabRel)
-            {
-                rel.Add(tab.Name, tab);
-            }
-            return rel;
-        }
 
         /// <summary>
         /// 将List中的所有数据用指定分隔符连接为一个新字符串
@@ -126,17 +115,6 @@ namespace DBUp_Mysql
             }
         }
 
-        public string ReadFileString(string dirName, string fileName, string currDir = null)
-        {
-            if (currDir == null)
-            {
-                currDir = Environment.CurrentDirectory;
-            }
-            string resultStr = currDir + string.Format("/DataSourceFile/{0}/{1}", dirName.StartsWith("/") ? dirName.Substring(1) : dirName, fileName);
-            if (!File.Exists(resultStr))
-                throw new Exception(string.Format("文件不存在（{0}/{1}）", dirName, fileName));
-            return File.ReadAllText(resultStr);
-        }
 
         public bool ShowDbDiff(string oldConnStr, string newConnStr)
         {
@@ -228,7 +206,7 @@ namespace DBUp_Mysql
             list = new Dictionary<string, TableInfo>();
             try
             {
-                list = GetInfo<TableInfo>(dirName, fileName);
+                list = Tools.GetInfo<TableInfo>(dirName, fileName);
                 return null;
             }
             catch (Exception e)
@@ -236,7 +214,7 @@ namespace DBUp_Mysql
                 return e.Message;
             }
         }
-        public bool CompareAndShow(Dictionary<string, TableInfo> oldItems, Dictionary<string, TableInfo> newItems, Setting setting, out string errorString,string newConnStr)
+        public bool CompareAndShow(Dictionary<string, TableInfo> oldItems, Dictionary<string, TableInfo> newItems, Setting setting, out string errorString)
         {
             StringBuilder errorStringBuilder = new StringBuilder();
 
@@ -665,11 +643,11 @@ namespace DBUp_Mysql
 
 
 
-                    AppendLineToCtrl();
                     //if (DeleteLastLintText("表："))
                     //    DeleteLastLintText("----------------------------------------------");
                 }
             }
+            AppendLineToCtrl();
 
             errorString = errorStringBuilder.ToString();
             return string.IsNullOrWhiteSpace(errorString);
@@ -718,7 +696,7 @@ namespace DBUp_Mysql
             list = new Dictionary<string, ViewInfo>();
             try
             {
-                list = GetInfo<ViewInfo>(dirName, fileName);
+                list = Tools.GetInfo<ViewInfo>(dirName, fileName);
                 return null;
             }
             catch (Exception e)
@@ -726,7 +704,7 @@ namespace DBUp_Mysql
                 return e.Message;
             }
         }
-        public bool CompareAndShow(Dictionary<string, ViewInfo> oldItems, Dictionary<string, ViewInfo> newItems, Setting setting, out string errorString, string newConnStr = null)
+        public bool CompareAndShow(Dictionary<string, ViewInfo> oldItems, Dictionary<string, ViewInfo> newItems, Setting setting, out string errorString)
         {
             StringBuilder errorStringBuilder = new StringBuilder();
 
@@ -822,10 +800,10 @@ namespace DBUp_Mysql
                         AppendLine(addViewSql, OutputType.Sql);
                     }
 
-                    AppendLineToCtrl();
                 }
             }
 
+            AppendLineToCtrl();
             errorString = errorStringBuilder.ToString();
             return string.IsNullOrWhiteSpace(errorString);
         }
@@ -872,7 +850,7 @@ namespace DBUp_Mysql
             list = new Dictionary<string, Trigger>();
             try
             {
-                list = GetInfo<Trigger>(dirName, fileName);
+                list = Tools.GetInfo<Trigger>(dirName, fileName);
                 return null;
             }
             catch (Exception e)
@@ -880,7 +858,7 @@ namespace DBUp_Mysql
                 return e.Message;
             }
         }
-        public bool CompareAndShow(Dictionary<string, Trigger> oldItems, Dictionary<string, Trigger> newItems, Setting setting, out string errorString, string newConnStr = null)
+        public bool CompareAndShow(Dictionary<string, Trigger> oldItems, Dictionary<string, Trigger> newItems, Setting setting, out string errorString)
         {
             StringBuilder errorStringBuilder = new StringBuilder();
 
@@ -972,10 +950,10 @@ namespace DBUp_Mysql
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
-                    AppendLineToCtrl();
                 }
             }
 
+            AppendLineToCtrl();
             errorString = errorStringBuilder.ToString();
             return string.IsNullOrWhiteSpace(errorString);
         }
@@ -1052,7 +1030,7 @@ namespace DBUp_Mysql
             list = new Dictionary<string, Function>();
             try
             {
-                list = GetInfo<Function>(dirName, fileName);
+                list = Tools.GetInfo<Function>(dirName, fileName);
                 return null;
             }
             catch (Exception e)
@@ -1062,7 +1040,7 @@ namespace DBUp_Mysql
         }
 
 
-        public bool CompareAndShow(Dictionary<string, Function> oldItems, Dictionary<string, Function> newItems, Setting setting, out string errorString, string newConnStr = null)
+        public bool CompareAndShow(Dictionary<string, Function> oldItems, Dictionary<string, Function> newItems, Setting setting, out string errorString)
         {
             StringBuilder errorStringBuilder = new StringBuilder();
             string temp = isFun ? "函数" : "存储过程";
@@ -1237,10 +1215,10 @@ namespace DBUp_Mysql
                             Output("\n", OutputType.None, setting, SqlType.Common);
                         }
                     }
-                    AppendLineToCtrl();
                 }
             }
 
+            AppendLineToCtrl();
             errorString = errorStringBuilder.ToString();
             return string.IsNullOrWhiteSpace(errorString);
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -50,6 +51,44 @@ namespace DBUp_Mysql
             }
             return rel;
         }
+        public static Dictionary<string, T> GetInfo<T>(string dirName, string fileName) where T : DBInfo
+        {
+            Dictionary<string, T> rel = new Dictionary<string, T>();
+            try
+            {
+                string resultStr = Tools.ReadFileString(dirName, fileName);
+                List<T> newtabRel = JsonConvert.DeserializeObject<List<T>>(resultStr);
+                foreach (var tab in newtabRel)
+                {
+                    rel.Add(tab.Name, tab);
+                }
+
+            }
+            catch (Exception)
+            {
+                //文件读取失败时 返回一个空的集合
+            }
+            return rel;
+        }
+        public static string ReadFileString(string dirName, string fileName, string currDir = null)
+        {
+            string resultStr = "";
+            if (dirName.Contains(":"))
+            {
+                resultStr = dirName.TrimEnd('/').TrimEnd('\\') + "/" + fileName;
+            }
+            else
+            {
+                if (currDir == null)
+                {
+                    currDir = Environment.CurrentDirectory;
+                }
+                resultStr = currDir + string.Format("/DataSourceFile/{0}/{1}", dirName.StartsWith("/") ? dirName.Substring(1) : dirName, fileName);
+            }
+            if (!File.Exists(resultStr))
+                throw new Exception(string.Format("文件不存在（{0}）", resultStr));
+            return File.ReadAllText(resultStr);
+        }
         /// <summary>
         /// 获取指定目录的下的所有文件夹
         /// </summary>
@@ -90,6 +129,40 @@ namespace DBUp_Mysql
                 }
             }
             return rel;
+        }
+
+
+        /// <summary>
+        /// 转换数字为指定精度的小数(四舍五入)
+        /// </summary>
+        /// <param name="_input">要转换的小数</param>
+        /// <param name="fractionDigits">保留的精度</param>
+        /// <returns>转换后的结果</returns>
+        public static double ToPrecision(double _input, int fractionDigits)
+        {
+            return Math.Round(_input, fractionDigits, MidpointRounding.AwayFromZero);
+        }
+        /// <summary>
+        /// 将List中的所有数据用指定分隔符连接为一个新字符串
+        /// </summary>
+        public static string JoinString(IList<string> list, string separateString)
+        {
+            if (list == null || list.Count < 1)
+                return null;
+            else
+            {
+                //StringBuilder builder = new StringBuilder();
+                //for (int i = 0; i < list.Count; ++i)
+                //    builder.Append(list[i]).Append(separateString);
+
+                //string result = builder.ToString();
+                //// 去掉最后多加的一次分隔符
+                //if (separateString != null)
+                //    return result.Substring(0, result.Length - separateString.Length);
+                //else
+                //    return result;
+                return string.Join(separateString, list);
+            }
         }
     }
 }

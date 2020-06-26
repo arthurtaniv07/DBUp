@@ -15,7 +15,9 @@ namespace DBUp_Mysql
 
     public enum DBDataSourceType
     {
-        MySql = 0,
-        DataSourceFile = 1
+        None = 0,
+        Empty = 1,
+        MySql = 2,
+        DataSourceFile = 3
     }
 }

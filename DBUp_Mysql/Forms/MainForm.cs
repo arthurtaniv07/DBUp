@@ -24,9 +24,7 @@ namespace DBUp_Mysql
         PathSetting oldpathCs = new PathSetting();
         PathSetting newpathCs = new PathSetting();
         PathSetting diffpathCs = new PathSetting();
-
-        string oldConnString = "";
-        string newConnString = "";
+        
         DBConnection oldConn = new DBConnection();
         DBConnection newConn = new DBConnection();
 
@@ -36,11 +34,15 @@ namespace DBUp_Mysql
         string oldServerName = "";
         string newServerName = "";
         Dictionary<string, DBDataSource> sourceList = new Dictionary<string, DBDataSource>();
+        DBDataSource oldDataSource = null;
+        DBDataSource newDataSource = null;
         public void ReloadDataSource()
         {
             var dbSource = ConfigHelper.GetConnections();
             var fileSourcce =  Tools.GetConnections();
             sourceList.Clear();
+            sourceList.Add("【空】", new DBDataSource() { Key = "【空】", Type = DBDataSourceType.Empty, Value = "" });
+
             foreach (var item in dbSource)
             {
                 sourceList.Add(item.Key, item.Value);
@@ -72,7 +74,7 @@ namespace DBUp_Mysql
             int newInx = -1;
             ReloadDataSource();
             //this.ddlOldDb.DataSource = sourceList.Values;
-            foreach (var item in sourceList)
+            foreach (var item in sourceList.Values)
             {
                 inx++;
                 this.ddlOldDb.Items.Add(item.Key);
@@ -160,29 +162,13 @@ namespace DBUp_Mysql
                 MessageBox.Show("新旧数据库不能重复", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            oldDataSource = sourceList.Values.FirstOrDefault(i => i.Key == this.ddlOldDb.SelectedItem.ToString());
+            newDataSource = sourceList.Values.FirstOrDefault(i => i.Key == this.ddlNewDb.SelectedItem.ToString());
 
-            oldConnString = "";
-            newConnString = "";
 
-            if (this.ddlNewDb.SelectedItem.ToString().StartsWith("/"))
-            {
-                newConnString = this.ddlNewDb.SelectedItem.ToString();
-            }
-            else
-            {
-                newConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ProviderName;
-                newConnString = ConfigurationManager.ConnectionStrings[this.ddlNewDb.SelectedItem.ToString()].ConnectionString;
-            }
+            newConn.ProviderName = newDataSource.ProviderName;
+            oldConn.ProviderName = oldDataSource.ProviderName;
 
-            if (this.ddlOldDb.SelectedItem.ToString().StartsWith("/"))
-            {
-                oldConnString = this.ddlOldDb.SelectedItem.ToString();
-            }
-            else
-            {
-                oldConn.ProviderName = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ProviderName;
-                oldConnString = ConfigurationManager.ConnectionStrings[this.ddlOldDb.SelectedItem.ToString()].ConnectionString;
-            }
             //从配置文件加载Setting
             if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
             {
@@ -215,16 +201,6 @@ namespace DBUp_Mysql
         DBStructureHelper helper = null;
 
         Timer totalTime = null;
-        /// <summary>
-        /// 转换数字为指定精度的小数(四舍五入)
-        /// </summary>
-        /// <param name="_input">要转换的小数</param>
-        /// <param name="fractionDigits">保留的精度</param>
-        /// <returns>转换后的结果</returns>
-        public static double ToPrecision(double _input, int fractionDigits)
-        {
-            return Math.Round(_input, fractionDigits, MidpointRounding.AwayFromZero);
-        }
         DateTime startTime = default(DateTime);
 
         public void SetTotalTime()
@@ -294,6 +270,15 @@ namespace DBUp_Mysql
         private void StartCompare()
         {
 
+            if (oldDataSource == null || newDataSource == null)
+            {
+                SetStatus(false);
+                AppendOutputText("无数据源", OutputType.Error);
+                MessageBox.Show("无数据源", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+
             cs.CheckCommon = this.cheComm.Checked;
             cs.OutputComment = xhkOutComment.Checked;
             cs.OutputDeleteSql = chkOutDeleteSql.Checked;
@@ -317,13 +302,9 @@ namespace DBUp_Mysql
 
 
 
-            if (oldConnString.StartsWith("/"))
+            if (oldDataSource.Type == DBDataSourceType.MySql)
             {
-                oldConn.ConnectionString = oldConnString;
-            }
-            else
-            {
-                using (helper = new DBStructureHelper(oldConnString))
+                using (helper = new DBStructureHelper(oldDataSource.Value))
                 {
                     ////测试连接到数据库，以免报错
                     //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
@@ -345,15 +326,15 @@ namespace DBUp_Mysql
                     oldConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
                 }
             }
-
-
-            if (newConnString.StartsWith("/"))
-            {
-                newConn.ConnectionString = newConnString;
-            }
             else
             {
-                using (helper = new DBStructureHelper(newConnString))
+                oldConn.ConnectionString = oldDataSource.Value;
+            }
+
+
+            if (newDataSource.Type == DBDataSourceType.MySql)
+            {
+                using (helper = new DBStructureHelper(newDataSource.Value))
                 {
                     ////测试连接到数据库，以免报错
                     //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
@@ -374,10 +355,14 @@ namespace DBUp_Mysql
                     newConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
                 }
             }
+            else
+            {
+                newConn.ConnectionString = newDataSource.Value;
+            }
 
 
             AppendOutputText("\n", OutputType.None);
-            if (!oldConn.ConnectionString.StartsWith("/") && !newConn.ConnectionString.StartsWith("/") && oldConn.ConnectionString == newConn.ConnectionString)
+            if (oldConn.ConnectionString == newConn.ConnectionString)
             {
                 AppendOutputText("新旧数据库数据源一致 无需比较", OutputType.Error);
                 MessageBox.Show("结束对比：新旧数据库数据源一致 无需比较", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -398,10 +383,10 @@ namespace DBUp_Mysql
 
             File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
 
-            if (!oldConn.ConnectionString.StartsWith("/") && !newConn.ConnectionString.StartsWith("/"))
+            if (oldDataSource.Type == DBDataSourceType.MySql && newDataSource.Type == DBDataSourceType.MySql)
             {
                 //这里比较数据库的sqlmode
-                new CompareAndShowResultHelperBase().ShowDbDiff(oldConnString, newConnString);
+                new CompareAndShowResultHelperBase().ShowDbDiff(oldDataSource.Value, newDataSource.Value);
             }
 
 
@@ -420,10 +405,10 @@ namespace DBUp_Mysql
 
                 #region 获取数据源
 
-                if (oldConnString.StartsWith("/"))
+                if (oldDataSource.Type== DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(oldConnString, oldpathCs.Tables, out oldTabs);
+                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Tables, out oldTabs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
                     else
@@ -432,18 +417,18 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(oldConnString, out oldTabs))
+                    if (viewHelper.GetInfoByDb(oldDataSource.Value, out oldTabs))
                         File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
                     else
                         tempBool = false;
                 }
-                if (newConnString.StartsWith("/"))
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(newConnString, newpathCs.Tables, out newTabs);
+                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Tables, out newTabs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
                     else
@@ -452,10 +437,10 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(newConnString, out newTabs))
+                    if (viewHelper.GetInfoByDb(newDataSource.Value, out newTabs))
                         File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
                     else
                         tempBool = false;
@@ -502,7 +487,7 @@ namespace DBUp_Mysql
 
                 if (cs.IsDiff)
                 {
-                    viewHelper.CompareAndShow(oldTabs, newTabs, cs, out string errorString, newConnString);
+                    viewHelper.CompareAndShow(oldTabs, newTabs, cs, out string errorString);
 
                     if (string.IsNullOrEmpty(errorString) && tempBool)
                     {
@@ -533,10 +518,10 @@ namespace DBUp_Mysql
 
                 #region 获取数据源
 
-                if (oldConnString.StartsWith("/"))
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(oldConnString, oldpathCs.Views, out views);
+                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Views, out views);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
                     else
@@ -545,19 +530,19 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(oldConnString, out views))
+                    if (viewHelper.GetInfoByDb(oldDataSource.Value, out views))
                         File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
                     else
                         tempBool = false;
                 }
 
-                if (newConnString.StartsWith("/"))
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(newConnString, newpathCs.Views, out newViews);
+                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Views, out newViews);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
                     else
@@ -566,10 +551,10 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(newDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(newConnString, out newViews))
+                    if (viewHelper.GetInfoByDb(newDataSource.Value, out newViews))
                         File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
                     else
                         tempBool = false;
@@ -648,10 +633,10 @@ namespace DBUp_Mysql
                 #region 获取数据源
 
 
-                if (oldConnString.StartsWith("/"))
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                    tempStt = trigHelper.GetInfoByFile(oldConnString, oldpathCs.Trigs, out tris);
+                    tempStt = trigHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Trigs, out tris);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
                     else
@@ -660,19 +645,19 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
-                    if (trigHelper.GetInfoByDb(oldConnString, out tris))
+                    if (trigHelper.GetInfoByDb(oldDataSource.Value, out tris))
                         File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
                     else
                         tempBool = false;
                 }
 
-                if (newConnString.StartsWith("/"))
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                    tempStt = trigHelper.GetInfoByFile(newConnString, newpathCs.Trigs, out newTris);
+                    tempStt = trigHelper.GetInfoByFile(newDataSource.Value, newpathCs.Trigs, out newTris);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
                     else
@@ -681,10 +666,10 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(newDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
-                    if (trigHelper.GetInfoByDb(newConnString, out newTris))
+                    if (trigHelper.GetInfoByDb(newDataSource.Value, out newTris))
                         File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
                     else
                         tempBool = false;
@@ -765,10 +750,10 @@ namespace DBUp_Mysql
 
                 #region 获取数据源
 
-                if (oldConnString.StartsWith("/"))
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(oldConnString, oldpathCs.Procs, out procs);
+                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Procs, out procs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
                     else
@@ -777,18 +762,18 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(oldConnString, out procs))
+                    if (funcHelper.GetInfoByDb(oldDataSource.Value, out procs))
                         File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
                     else
                         tempBool = false;
                 }
-                if (newConnString.StartsWith("/"))
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(newConnString, newpathCs.Procs, out newProcs);
+                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Procs, out newProcs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
                     else
@@ -797,10 +782,10 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(newDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(newConnString, out newProcs))
+                    if (funcHelper.GetInfoByDb(newDataSource.Value, out newProcs))
                         File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
                     else
                         tempBool = false;
@@ -881,10 +866,10 @@ namespace DBUp_Mysql
 
                 #region 获取数据源
 
-                if (oldConnString.StartsWith("/"))
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(oldConnString, oldpathCs.Funcs, out funcs);
+                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Funcs, out funcs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
                     else
@@ -893,19 +878,19 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(oldConnString, out funcs))
+                    if (funcHelper.GetInfoByDb(oldDataSource.Value, out funcs))
                         File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
                     else
                         tempBool = false;
                 }
 
-                if (newConnString.StartsWith("/"))
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
                 {
                     AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(newConnString, newpathCs.Funcs, out newFuncs);
+                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Funcs, out newFuncs);
                     if (string.IsNullOrWhiteSpace(tempStt))
                         File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
                     else
@@ -914,10 +899,10 @@ namespace DBUp_Mysql
                         AppendOutputText(tempStt + "\r\n", OutputType.Error);
                     }
                 }
-                else
+                else if(newDataSource.Type == DBDataSourceType.MySql)
                 {
                     AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(newConnString, out newFuncs))
+                    if (funcHelper.GetInfoByDb(newDataSource.Value, out newFuncs))
                         File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
                     else
                         tempBool = false;
