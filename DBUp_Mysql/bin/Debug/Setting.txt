@@ -6,5 +6,8 @@
     "IsSearProc": true,
     "IsSearFunc": true,
     "IsSearTri": true,
+    "OutputComment": false,
+    "OutputDeleteSql": false,
+    "OutputDeleteSqlIsCommon": true,
     "IsDiff": true
   }

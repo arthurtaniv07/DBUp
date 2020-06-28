@@ -14,6 +14,7 @@ namespace DBUp_Mysql
         public string Procs { get; set; } = "Procs.txt";
         public string Funcs { get; set; } = "Funcs.txt";
         public string Trigs { get; set; } = "Trigs.txt";
-    
+        public string DBSetting { get; set; } = "DB.txt";
+
     }
 }

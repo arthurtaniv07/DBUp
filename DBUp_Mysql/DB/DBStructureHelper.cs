@@ -190,14 +190,26 @@ namespace DBUp_Mysql
             }
         }
 
-        private const string _SELECT_DBMODE_SQL = "select @@global.sql_mode;";
-        public DbModel GetDbInfo()
+        public DBSetting GetDbInfo()
         {
-            DbModel rel = new DbModel();
+            DBSetting rel = new DBSetting();
+            rel.Port = Convert.ToInt32(Port);
+            rel.DbName =rel.SchemaName = DbName;
+            rel.Server = Server;
 
-            MySqlCommand cmd = new MySqlCommand(_SELECT_DBMODE_SQL, Conn);
+            MySqlCommand cmd = new MySqlCommand(DBSqlHelper.DBMODE_SQL, Conn);
             DataTable dt = _ExecuteSqlCommand(cmd);
             rel.SqlMode = dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
+
+            
+            cmd = new MySqlCommand(DBSqlHelper.CurrIsolationSQL, Conn);
+            dt = _ExecuteSqlCommand(cmd);
+            rel.TransactionIsolationType = dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
+
+            cmd = new MySqlCommand(DBSqlHelper.VersionSQL, Conn);
+            dt = _ExecuteSqlCommand(cmd);
+            rel.Version = dt.Rows.Count > 0 ? dt.Rows[0][0].ToString() : string.Empty;
+
             return rel;
         }
 
@@ -256,7 +268,7 @@ namespace DBUp_Mysql
             // 表名
             tableInfo.Name = tableName;
             // 表注释（注意转义注释中的换行）
-            tableInfo.Comment = _GetTableProperty(tableName, "TABLE_COMMENT").Replace(System.Environment.NewLine, "\\n").Replace("\n", "\\n");
+            tableInfo.Comment = _GetTableProperty(tableName, "TABLE_COMMENT").Replace(StOs.NewLine, "\\n").Replace("\n", "\\n");
             // 表校对集
             tableInfo.Collation = _GetTableProperty(tableName, "TABLE_COLLATION");
             // 索引设置
@@ -1072,7 +1084,7 @@ MODIFY COLUMN `PhoneVirtual` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_g
         {
             return string.Format(_DROP_FUNC_SQL, viewName);
         }
-        private const string _ADD_FUNC_SQL = "DELIMITER $$\r\n{0}$$\r\n";
+        private const string _ADD_FUNC_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
         public string GetAddFuncSql(Function model)
         {
             string sql = model.Info.CreateSQL;
@@ -1193,7 +1205,7 @@ MODIFY COLUMN `PhoneVirtual` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_g
         {
             return string.Format(_DROP_PROCS_SQL, viewName);
         }
-        private const string _ADD_PROCS_SQL = "DELIMITER $$\r\n{0}$$\r\n";
+        private const string _ADD_PROCS_SQL = "DELIMITER $$\r\n{0}$$\r\nDELIMITER ;\r\n";
         public string GetAddProcsSql(Function model)
         {
             string sql = model.Info.CreateSQL;
@@ -1287,6 +1299,7 @@ CREATE TRIGGER {0}
     {1} {2} on {3} 
     FOR EACH ROW 
 {4}$$
+DELIMITER ;
 ";
         public string GetAddTrisSql(Trigger model)
         {

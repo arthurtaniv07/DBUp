@@ -40,15 +40,21 @@
             this.label1 = new System.Windows.Forms.Label();
             this.chkOutDeleteSql = new System.Windows.Forms.CheckBox();
             this.chkOutDeleteSqlIsCommon = new System.Windows.Forms.CheckBox();
+            this.chkDiffTable = new System.Windows.Forms.CheckBox();
+            this.chkDiffView = new System.Windows.Forms.CheckBox();
+            this.chkDiffTrigger = new System.Windows.Forms.CheckBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.chkDiffFunc = new System.Windows.Forms.CheckBox();
+            this.chkDiffProc = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // btnCompare
             // 
             this.btnCompare.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnCompare.Location = new System.Drawing.Point(10, 71);
+            this.btnCompare.Location = new System.Drawing.Point(10, 98);
             this.btnCompare.Name = "btnCompare";
-            this.btnCompare.Size = new System.Drawing.Size(748, 35);
+            this.btnCompare.Size = new System.Drawing.Size(690, 35);
             this.btnCompare.TabIndex = 8;
             this.btnCompare.Text = "对比";
             this.btnCompare.UseVisualStyleBackColor = true;
@@ -59,18 +65,17 @@
             this.RtxResult.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.RtxResult.Location = new System.Drawing.Point(10, 111);
+            this.RtxResult.Location = new System.Drawing.Point(10, 138);
             this.RtxResult.Margin = new System.Windows.Forms.Padding(2);
             this.RtxResult.Name = "RtxResult";
-            this.RtxResult.Size = new System.Drawing.Size(750, 281);
+            this.RtxResult.Size = new System.Drawing.Size(692, 288);
             this.RtxResult.TabIndex = 9;
             this.RtxResult.Text = "";
             // 
             // cheComm
             // 
-            this.cheComm.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cheComm.AutoSize = true;
-            this.cheComm.Location = new System.Drawing.Point(582, 19);
+            this.cheComm.Location = new System.Drawing.Point(463, 45);
             this.cheComm.Margin = new System.Windows.Forms.Padding(2);
             this.cheComm.Name = "cheComm";
             this.cheComm.Size = new System.Drawing.Size(72, 16);
@@ -82,7 +87,7 @@
             // 
             this.lblTotalTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lblTotalTime.AutoSize = true;
-            this.lblTotalTime.Location = new System.Drawing.Point(12, 397);
+            this.lblTotalTime.Location = new System.Drawing.Point(12, 431);
             this.lblTotalTime.Name = "lblTotalTime";
             this.lblTotalTime.Size = new System.Drawing.Size(65, 12);
             this.lblTotalTime.TabIndex = 11;
@@ -93,7 +98,7 @@
             // btnTh
             // 
             this.btnTh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnTh.Location = new System.Drawing.Point(685, 10);
+            this.btnTh.Location = new System.Drawing.Point(627, 15);
             this.btnTh.Name = "btnTh";
             this.btnTh.Size = new System.Drawing.Size(71, 28);
             this.btnTh.TabIndex = 8;
@@ -106,7 +111,7 @@
             // 
             this.linkLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(377, 397);
+            this.linkLabel1.Location = new System.Drawing.Point(319, 431);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(383, 12);
             this.linkLabel1.TabIndex = 29;
@@ -134,7 +139,7 @@
             // xhkOutComment
             // 
             this.xhkOutComment.AutoSize = true;
-            this.xhkOutComment.Location = new System.Drawing.Point(82, 47);
+            this.xhkOutComment.Location = new System.Drawing.Point(82, 72);
             this.xhkOutComment.Margin = new System.Windows.Forms.Padding(2);
             this.xhkOutComment.Name = "xhkOutComment";
             this.xhkOutComment.Size = new System.Drawing.Size(72, 16);
@@ -145,7 +150,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 48);
+            this.label1.Location = new System.Drawing.Point(12, 73);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(65, 12);
             this.label1.TabIndex = 11;
@@ -157,7 +162,7 @@
             this.chkOutDeleteSql.AutoSize = true;
             this.chkOutDeleteSql.Checked = true;
             this.chkOutDeleteSql.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkOutDeleteSql.Location = new System.Drawing.Point(169, 47);
+            this.chkOutDeleteSql.Location = new System.Drawing.Point(169, 72);
             this.chkOutDeleteSql.Margin = new System.Windows.Forms.Padding(2);
             this.chkOutDeleteSql.Name = "chkOutDeleteSql";
             this.chkOutDeleteSql.Size = new System.Drawing.Size(96, 16);
@@ -171,7 +176,7 @@
             this.chkOutDeleteSqlIsCommon.AutoSize = true;
             this.chkOutDeleteSqlIsCommon.Checked = true;
             this.chkOutDeleteSqlIsCommon.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkOutDeleteSqlIsCommon.Location = new System.Drawing.Point(282, 47);
+            this.chkOutDeleteSqlIsCommon.Location = new System.Drawing.Point(282, 72);
             this.chkOutDeleteSqlIsCommon.Margin = new System.Windows.Forms.Padding(2);
             this.chkOutDeleteSqlIsCommon.Name = "chkOutDeleteSqlIsCommon";
             this.chkOutDeleteSqlIsCommon.Size = new System.Drawing.Size(132, 16);
@@ -179,17 +184,99 @@
             this.chkOutDeleteSqlIsCommon.Text = "删除语句以注释输出";
             this.chkOutDeleteSqlIsCommon.UseVisualStyleBackColor = true;
             // 
+            // chkDiffTable
+            // 
+            this.chkDiffTable.AutoSize = true;
+            this.chkDiffTable.Checked = true;
+            this.chkDiffTable.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkDiffTable.Location = new System.Drawing.Point(82, 45);
+            this.chkDiffTable.Margin = new System.Windows.Forms.Padding(2);
+            this.chkDiffTable.Name = "chkDiffTable";
+            this.chkDiffTable.Size = new System.Drawing.Size(36, 16);
+            this.chkDiffTable.TabIndex = 10;
+            this.chkDiffTable.Text = "表";
+            this.chkDiffTable.UseVisualStyleBackColor = true;
+            // 
+            // chkDiffView
+            // 
+            this.chkDiffView.AutoSize = true;
+            this.chkDiffView.Checked = true;
+            this.chkDiffView.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkDiffView.Location = new System.Drawing.Point(139, 45);
+            this.chkDiffView.Margin = new System.Windows.Forms.Padding(2);
+            this.chkDiffView.Name = "chkDiffView";
+            this.chkDiffView.Size = new System.Drawing.Size(48, 16);
+            this.chkDiffView.TabIndex = 10;
+            this.chkDiffView.Text = "视图";
+            this.chkDiffView.UseVisualStyleBackColor = true;
+            this.chkDiffView.CheckedChanged += new System.EventHandler(this.chkOutDeleteSql_CheckedChanged);
+            // 
+            // chkDiffTrigger
+            // 
+            this.chkDiffTrigger.AutoSize = true;
+            this.chkDiffTrigger.Checked = true;
+            this.chkDiffTrigger.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkDiffTrigger.Location = new System.Drawing.Point(205, 45);
+            this.chkDiffTrigger.Margin = new System.Windows.Forms.Padding(2);
+            this.chkDiffTrigger.Name = "chkDiffTrigger";
+            this.chkDiffTrigger.Size = new System.Drawing.Size(60, 16);
+            this.chkDiffTrigger.TabIndex = 10;
+            this.chkDiffTrigger.Text = "触发器";
+            this.chkDiffTrigger.UseVisualStyleBackColor = true;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(12, 46);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(65, 12);
+            this.label2.TabIndex = 11;
+            this.label2.Tag = "配置：";
+            this.label2.Text = "比较对象：";
+            // 
+            // chkDiffFunc
+            // 
+            this.chkDiffFunc.AutoSize = true;
+            this.chkDiffFunc.Checked = true;
+            this.chkDiffFunc.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkDiffFunc.Location = new System.Drawing.Point(282, 45);
+            this.chkDiffFunc.Margin = new System.Windows.Forms.Padding(2);
+            this.chkDiffFunc.Name = "chkDiffFunc";
+            this.chkDiffFunc.Size = new System.Drawing.Size(48, 16);
+            this.chkDiffFunc.TabIndex = 31;
+            this.chkDiffFunc.Text = "函数";
+            this.chkDiffFunc.UseVisualStyleBackColor = true;
+            // 
+            // chkDiffProc
+            // 
+            this.chkDiffProc.AutoSize = true;
+            this.chkDiffProc.Checked = true;
+            this.chkDiffProc.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkDiffProc.Location = new System.Drawing.Point(343, 45);
+            this.chkDiffProc.Margin = new System.Windows.Forms.Padding(2);
+            this.chkDiffProc.Name = "chkDiffProc";
+            this.chkDiffProc.Size = new System.Drawing.Size(72, 16);
+            this.chkDiffProc.TabIndex = 31;
+            this.chkDiffProc.Text = "存储过程";
+            this.chkDiffProc.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(768, 414);
+            this.ClientSize = new System.Drawing.Size(710, 448);
+            this.Controls.Add(this.chkDiffProc);
+            this.Controls.Add(this.chkDiffFunc);
             this.Controls.Add(this.ddlNewDb);
             this.Controls.Add(this.ddlOldDb);
             this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
+            this.Controls.Add(this.chkDiffTrigger);
             this.Controls.Add(this.lblTotalTime);
+            this.Controls.Add(this.chkDiffView);
             this.Controls.Add(this.chkOutDeleteSqlIsCommon);
+            this.Controls.Add(this.chkDiffTable);
             this.Controls.Add(this.chkOutDeleteSql);
             this.Controls.Add(this.xhkOutComment);
             this.Controls.Add(this.cheComm);
@@ -200,6 +287,7 @@
             this.MinimumSize = new System.Drawing.Size(599, 399);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Tag = "数据库升级助手(MySQL 简易版) {0}       By谭盼(13012363357)";
             this.Text = "数据库升级助手(MySQL 简易版) By谭盼(13012363357)";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
@@ -223,6 +311,12 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox chkOutDeleteSql;
         private System.Windows.Forms.CheckBox chkOutDeleteSqlIsCommon;
+        private System.Windows.Forms.CheckBox chkDiffTable;
+        private System.Windows.Forms.CheckBox chkDiffView;
+        private System.Windows.Forms.CheckBox chkDiffTrigger;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.CheckBox chkDiffFunc;
+        private System.Windows.Forms.CheckBox chkDiffProc;
     }
 }
 

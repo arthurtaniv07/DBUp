@@ -1,0 +1,13 @@
+-- 从数据库中获取视图
+-- 开始获取数据库视图结构(localhost:3306  test)
+--   获取到 1 个视图
+-- 当前进度：100% 1/1 ，耗时：00
+-- 
+-- 从数据库中获取视图
+-- 开始获取数据库视图结构(localhost:3306  test_up)
+--   获取到 1 个视图
+-- 当前进度：100% 1/1 ，耗时：00
+-- 
+ALTER VIEW `aaa` AS select `test_copy1`.`Classes` AS `Classes`,`test_copy1`.`Name` AS `Name`,`test_copy1`.`Type` AS `Type`,`test_copy1`.`Score` AS `Score`,`test_copy1`.`Time` AS `Time`,`test_copy1`.`b` AS `b` from `test_copy1`
+-- 对比完毕
+

@@ -13,11 +13,4 @@ namespace DBUp_Mysql
         public DBDataSourceType Type { get; set; }
     }
 
-    public enum DBDataSourceType
-    {
-        None = 0,
-        Empty = 1,
-        MySql = 2,
-        DataSourceFile = 3
-    }
 }

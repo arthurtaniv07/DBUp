@@ -55,15 +55,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\CompareAndShowResult\CompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\CompareAndShowResultHelperFactory.cs" />
+    <Compile Include="Common\CompareAndShowResult\FuncCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\ProcCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\TrigCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\ViewCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\TableCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\DataBaseCompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\CompareAndShowResultHelperBase.cs" />
     <Compile Include="Common\NetworkAdapter.cs" />
-    <Compile Include="Common\CompareAndShowResultHelper.cs" />
+    <Compile Include="Common\CompareAndShowResult\ICompareAndShowResultHelper.cs" />
     <Compile Include="Common\StMailHelper.cs" />
     <Compile Include="Common\ConfigHelper.cs" />
     <Compile Include="Common\SortingOption.cs" />
+    <Compile Include="DB\DBSqlHelper.cs" />
     <Compile Include="Model\Config.cs" />
     <Compile Include="Model\DBConnection.cs" />
     <Compile Include="Common\FormTools.cs" />
     <Compile Include="Model\DBDataSource.cs" />
+    <Compile Include="Model\DBInfo\DBInfo.cs" />
+    <Compile Include="Model\DBInfo\DbModels.cs" />
+    <Compile Include="Model\DBInfo\DBSetting.cs" />
+    <Compile Include="Model\DBInfo\Function.cs" />
+    <Compile Include="Model\DBInfo\Trigger.cs" />
+    <Compile Include="Model\DBInfo\ViewInfo.cs" />
+    <Compile Include="Model\Enums.cs" />
+    <Compile Include="Model\FieldSortedOption.cs" />
     <Compile Include="Model\PageContent.cs" />
     <Compile Include="Forms\ReleaseCode.cs">
       <SubType>Form</SubType>
@@ -90,7 +108,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Common\StOs.cs" />
-    <Compile Include="Model\TableInfo.cs" />
+    <Compile Include="Model\DBInfo\TableInfo.cs" />
     <Compile Include="Common\Tools.cs" />
     <Compile Include="Common\Win32API.cs" />
     <EmbeddedResource Include="Forms\ReleaseCode.resx">
@@ -126,6 +144,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="bin\Debug\Setting.txt" />
     <Content Include="DLL\MySql.Data.dll" />
     <Content Include="DLL\MySql.Data1.dll" />
     <Content Include="DLL\Newtonsoft.Json.dll" />

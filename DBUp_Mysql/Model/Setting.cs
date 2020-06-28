@@ -15,12 +15,34 @@ namespace DBUp_Mysql
         /// 比较注释
         /// </summary>
         public bool CheckCommon { get; set; } = false;
-
+        /// <summary>
+        /// 是否获取表
+        /// </summary>
         public bool IsSearTable { get; set; } = true;
+        /// <summary>
+        /// 是否获取视图
+        /// </summary>
         public bool IsSearView { get; set; } = true;
+        /// <summary>
+        /// 是否获取存储过程
+        /// </summary>
         public bool IsSearProc { get; set; } = true;
+        /// <summary>
+        /// 是否获取函数
+        /// </summary>
         public bool IsSearFunc { get; set; } = true;
+        /// <summary>
+        /// 是否获取触发器
+        /// </summary>
         public bool IsSearTri { get; set; } = true;
+        /// <summary>
+        /// 是否获取数据库
+        /// </summary>
+        public bool IsSearDB { get; set; } = true;
+
+        /// <summary>
+        /// 是否执行比较
+        /// </summary>
         public bool IsDiff { get; set; } = true;
 
         /// <summary>

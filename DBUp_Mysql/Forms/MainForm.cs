@@ -28,11 +28,7 @@ namespace DBUp_Mysql
         DBConnection oldConn = new DBConnection();
         DBConnection newConn = new DBConnection();
 
-
-        string oldDbName = "";
-        string newDbName = "";
-        string oldServerName = "";
-        string newServerName = "";
+        
         Dictionary<string, DBDataSource> sourceList = new Dictionary<string, DBDataSource>();
         DBDataSource oldDataSource = null;
         DBDataSource newDataSource = null;
@@ -63,6 +59,7 @@ namespace DBUp_Mysql
             cs.Procs = targ + pathCs.Procs;
             cs.Trigs = targ + pathCs.Trigs;
             cs.Views = targ + pathCs.Views;
+            cs.DBSetting = targ + pathCs.DBSetting;
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -109,6 +106,7 @@ namespace DBUp_Mysql
 
             config.NewPathSetting = newpathCs;
             config.OldPathSetting = oldpathCs;
+            config.DiffPathSetting = diffpathCs;
             config.NewConnection = newConn;
             config.OldConnection = oldConn;
             config.Setting = cs;
@@ -133,6 +131,32 @@ namespace DBUp_Mysql
             });
 
 
+            //从配置文件加载Setting
+            if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
+            {
+                try
+                {
+                    cs = JsonConvert.DeserializeObject<Setting>(File.ReadAllText(Environment.CurrentDirectory + "/Setting.txt"));
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("配置文件(Setting.txt)获取出错，请联系管理员", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+
+            this.Text = string.Format(this.Tag + "", config.Ver);
+            this.cheComm.Checked = cs.CheckCommon;
+            this.xhkOutComment.Checked = cs.OutputComment;
+            this.chkOutDeleteSql.Checked = cs.OutputDeleteSql;
+            this.chkOutDeleteSqlIsCommon.Checked = cs.OutputDeleteSqlIsCommon;
+
+            this.chkDiffFunc.Checked = cs.IsSearFunc;
+            this.chkDiffTable.Checked = cs.IsSearTable;
+            this.chkDiffProc.Checked = cs.IsSearProc;
+            this.chkDiffTrigger.Checked = cs.IsSearTri;
+            this.chkDiffView.Checked = cs.IsSearView;
 
 
             totalTime = new Timer();
@@ -169,19 +193,6 @@ namespace DBUp_Mysql
             newConn.ProviderName = newDataSource.ProviderName;
             oldConn.ProviderName = oldDataSource.ProviderName;
 
-            //从配置文件加载Setting
-            if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
-            {
-                try
-                {
-                    cs = JsonConvert.DeserializeObject<Setting>(File.ReadAllText(Environment.CurrentDirectory + "/Setting.txt"));
-                }
-                catch (Exception)
-                {
-                    MessageBox.Show("配置文件(Setting.txt)获取出错，请联系管理员", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
 
             if (cs.IsDebug)
             {
@@ -243,6 +254,575 @@ namespace DBUp_Mysql
         }
 
 
+        private void StartCompare()
+        {
+
+            config.Setting = cs;
+
+
+            if (oldDataSource == null || newDataSource == null)
+            {
+                SetStatus(false);
+                AppendOutputText("无数据源", OutputType.Error);
+                MessageBox.Show("无数据源", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            DbModels oldDbModels = GetEmptyDbModel(oldDataSource.Type);
+            DbModels newDbModels = GetEmptyDbModel(newDataSource.Type);
+
+
+            cs.CheckCommon = this.cheComm.Checked;
+            cs.OutputComment = xhkOutComment.Checked;
+            cs.OutputDeleteSql = chkOutDeleteSql.Checked;
+            cs.OutputDeleteSqlIsCommon = chkOutDeleteSqlIsCommon.Checked;
+            cs.IsSearFunc = this.chkDiffFunc.Checked;
+            cs.IsSearTable = this.chkDiffTable.Checked;
+            cs.IsSearProc = this.chkDiffProc.Checked;
+            cs.IsSearTri = this.chkDiffTrigger.Checked;
+            cs.IsSearView = this.chkDiffView.Checked;
+
+
+
+            //处理数据源字符串
+            config.OldConnection.ConnectionString = GetShowConnectionString(oldDataSource);
+            config.NewConnection.ConnectionString = GetShowConnectionString(newDataSource);
+            config.OldConnection.ProviderName = oldDataSource.ProviderName;
+            config.NewConnection.ProviderName = newDataSource.ProviderName;
+
+            startTime = DateTime.Now;
+            SetTotalTime();
+
+            ClearOutputText();
+            //throw new Exception("testing");
+            List<string> tempList = new List<string>();
+            List<Function> tempFunList = new List<Function>();
+            string tempStt = "";
+            string tempStr = "";
+            bool tempBool = false;
+
+            SetStatus(true);
+
+            AppendOutputText("我们正在准备一些事情，请耐心等待\n", OutputType.Comment);
+
+
+
+            //获取数据库信息
+            tempBool = true;
+            DataBaseCompareAndShowResultHelper dbHelper = new DataBaseCompareAndShowResultHelper();
+            dbHelper.OutputText = AppendOutputText;
+            dbHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+
+            #region 获取数据源
+
+            if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+            {
+                ////测试连接到数据库，以免报错
+                //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
+                //if (!helper.TestLine(10000))
+                //{
+                //    AppendOutputText("新数据库连接失败\n", OutputType.Comment);
+                //    MessageBox.Show("新数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    SetStatus(false);
+                //    return;
+                //}
+                //else
+                //{
+                //    AppendOutputText("新数据库连接成功\n", OutputType.Comment);
+                //}
+
+
+                AppendOutputText("从文件中获取数据库信息\n", OutputType.Comment);
+                tempStt = dbHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.DBSetting, ref oldDbModels);
+                if (!string.IsNullOrWhiteSpace(tempStt))
+                {
+                    tempBool = false;
+                    AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                }
+            }
+            else if (oldDataSource.Type == DBDataSourceType.MySql)
+            {
+                AppendOutputText("从数据库中获取数据库信息\n", OutputType.Comment);
+                if (!dbHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                    tempBool = false;
+            }
+            if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+            {
+                ////测试连接到数据库，以免报错
+                //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
+                //if (!helper.TestLine(10000))
+                //{
+                //    AppendOutputText("旧数据库连接失败\n", OutputType.Comment);
+                //    MessageBox.Show("旧数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    SetStatus(false);
+                //    return;
+                //}
+                //else
+                //{
+                //    AppendOutputText("旧数据库连接成功\n", OutputType.Comment);
+                //}
+
+
+                AppendOutputText("从文件中获取数据库信息\n", OutputType.Comment);
+                tempStt = dbHelper.GetInfoByFile(newDataSource.Value, newpathCs.DBSetting, ref newDbModels);
+                if (!string.IsNullOrWhiteSpace(tempStt))
+                {
+                    tempBool = false;
+                    AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                }
+            }
+            else if (newDataSource.Type == DBDataSourceType.MySql)
+            {
+                AppendOutputText("从数据库中获取数据库信息\n", OutputType.Comment);
+                if (!dbHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                    tempBool = false;
+            }
+            #endregion
+
+            string resultStr = "";
+            if (tempBool)
+            {
+                resultStr = Tools.GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbModels.DbModel.DbName, newDbModels.DbModel.DbName));
+
+
+                File.AppendAllText(resultStr + oldpathCs.DBSetting, JsonConvert.SerializeObject(oldDbModels.DbModel));
+                File.AppendAllText(resultStr + newpathCs.DBSetting, JsonConvert.SerializeObject(newDbModels.DbModel));
+            }
+            else
+            {
+                throw new Exception("获取数据库信息失败");
+            }
+            
+
+            ////从网卡层面判断是否联网
+            //if (!Win32API.InternetGetConnectedState(ref int tempInx, 0))
+            //{
+            //    AppendOutputText("请检查你的网络状态", OutputType.Error);
+            //    MessageBox.Show("结束对比：请检查你的网络状态", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    SetStatus(false);
+            //    return;
+            //}
+
+
+            AppendOutputText("\n", OutputType.None);
+            File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
+
+            
+            if (cs.IsDiff)
+            {
+                dbHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+
+                if (string.IsNullOrEmpty(errorString) && tempBool)
+                {
+                    AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                    //compIsError = true;
+                }
+                else
+                {
+                    //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                    //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                File.AppendAllText(resultStr + diffpathCs.DBSetting, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+
+            }
+            tempStr = RtxResult.Text;
+
+
+            if (cs.IsSearTable)
+            {
+                tempBool = true;
+                TableCompareAndShowResultHelper viewHelper = new TableCompareAndShowResultHelper();
+                viewHelper.OutputText = AppendOutputText;
+                viewHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+
+
+                #region 获取数据源
+
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Tables, ref oldDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldDbModels.Tables.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if (oldDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
+                    if (viewHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldDbModels.Tables.Values));
+                    else
+                        tempBool = false;
+                }
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Tables, ref newDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newDbModels.Tables.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if (newDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
+                    if (viewHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newDbModels.Tables.Values));
+                    else
+                        tempBool = false;
+                }
+
+                #endregion
+
+
+                if (cs.IsDiff)
+                {
+                    viewHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+
+                    if (string.IsNullOrEmpty(errorString) && tempBool)
+                    {
+                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                        //compIsError = true;
+                    }
+                    else
+                    {
+                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    File.AppendAllText(resultStr + diffpathCs.Tables, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+
+                }
+                tempStr = RtxResult.Text;
+            }
+
+
+            if (cs.IsSearView)
+            {
+
+                tempBool = true;
+                ViewCompareAndShowResultHelper viewHelper = new ViewCompareAndShowResultHelper();
+                viewHelper.OutputText = AppendOutputText;
+                viewHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+                #region 获取数据源
+
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Views, ref oldDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(oldDbModels.Views.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
+                    if (viewHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(oldDbModels.Views.Values));
+                    else
+                        tempBool = false;
+                }
+
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
+                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Views, ref newDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newDbModels.Views.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(newDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
+                    if (viewHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newDbModels.Views.Values));
+                    else
+                        tempBool = false;
+                }
+                
+                #endregion
+
+                if (cs.IsDiff)
+                {
+
+                    viewHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+
+                    if (string.IsNullOrEmpty(errorString) && tempBool)
+                    {
+                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                    }
+                    else
+                    {
+                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    File.AppendAllText(resultStr + diffpathCs.Views, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+
+                }
+                tempStr = RtxResult.Text;
+            }
+
+            if (cs.IsSearTri)
+            {
+                tempBool = true;
+                TrigCompareAndShowResultHelper trigHelper = new TrigCompareAndShowResultHelper();
+                trigHelper.OutputText = AppendOutputText;
+                trigHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+
+                #region 获取数据源
+
+
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
+                    tempStt = trigHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Trigs, ref oldDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(oldDbModels.Triggers.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
+                    if (trigHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(oldDbModels.Triggers.Values));
+                    else
+                        tempBool = false;
+                }
+
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
+                    tempStt = trigHelper.GetInfoByFile(newDataSource.Value, newpathCs.Trigs, ref newDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newDbModels.Triggers.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(newDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
+                    if (trigHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newDbModels.Triggers.Values));
+                    else
+                        tempBool = false;
+                }
+                
+                #endregion
+
+
+
+                if (cs.IsDiff)
+                {
+
+                    trigHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+
+                    if (string.IsNullOrEmpty(errorString) && tempBool)
+                    {
+                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                        File.AppendAllText(resultStr + diffpathCs.Trigs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+                    }
+                    else
+                    {
+                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
+                }
+                tempStr = RtxResult.Text;
+            }
+
+
+
+            if (cs.IsSearProc)
+            {
+                tempBool = true;
+                ProcCompareAndShowResultHelper funcHelper = new ProcCompareAndShowResultHelper();
+                funcHelper.OutputText = AppendOutputText;
+                funcHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+
+                #region 获取数据源
+
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Procs, ref oldDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(oldDbModels.Procs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
+                    if (funcHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(oldDbModels.Procs.Values));
+                    else
+                        tempBool = false;
+                }
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Procs, ref newDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newDbModels.Procs.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(newDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
+                    if (funcHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newDbModels.Procs.Values));
+                    else
+                        tempBool = false;
+                }
+
+                #endregion
+
+                if (cs.IsDiff)
+                {
+                    funcHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+                    //CompareAndShowResult(procs, newProcs, cs, out string errorString);
+
+                    if (string.IsNullOrEmpty(errorString) && tempBool)
+                    {
+                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                        File.AppendAllText(resultStr + diffpathCs.Procs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+                    }
+                    else
+                    {
+                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
+                }
+                tempStr = RtxResult.Text;
+            }
+
+
+
+            if (cs.IsSearFunc)
+            {
+                tempBool = true;
+                FuncCompareAndShowResultHelper funcHelper = new FuncCompareAndShowResultHelper();
+                funcHelper.OutputText = AppendOutputText;
+                funcHelper.ReplaceLastLineText = ReplaceLastLineText;
+
+
+                #region 获取数据源
+
+                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Funcs, ref oldDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(oldDbModels.Functions.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(oldDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
+                    if (funcHelper.GetInfoByDb(oldDataSource.Value, ref oldDbModels))
+                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(oldDbModels.Functions.Values));
+                    else
+                        tempBool = false;
+                }
+
+                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
+                {
+                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
+                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Funcs, ref newDbModels);
+                    if (string.IsNullOrWhiteSpace(tempStt))
+                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newDbModels.Functions.Values));
+                    else
+                    {
+                        tempBool = false;
+                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
+                    }
+                }
+                else if(newDataSource.Type == DBDataSourceType.MySql)
+                {
+                    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
+                    if (funcHelper.GetInfoByDb(newDataSource.Value, ref newDbModels))
+                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newDbModels.Functions.Values));
+                    else
+                        tempBool = false;
+                }
+
+                #endregion
+
+
+                if (cs.IsDiff)
+                {
+
+                    funcHelper.CompareAndShow(ref oldDbModels, ref newDbModels, cs, out string errorString);
+
+                    if (string.IsNullOrEmpty(errorString) && tempBool)
+                    {
+                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
+                        File.AppendAllText(resultStr + diffpathCs.Funcs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
+                    }
+                    else
+                    {
+                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
+                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+
+                }
+                tempStr = RtxResult.Text;
+            }
+
+            //bool compIsError = false;
+
+            AppendOutputText("\n", OutputType.Comment);
+            AppendOutputText("执行完毕\n", OutputType.Comment);
+
+            SetStatus(false);
+            //try
+            //{
+            //    AbortTh();
+            //}
+            //catch (Exception)
+            //{
+            //}
+        }
+
+
         private void SetStatus(bool isStart)
         {
             if (isStart)
@@ -267,721 +847,63 @@ namespace DBUp_Mysql
         }
 
 
-        private void StartCompare()
+        private DbModels GetEmptyDbModel(DBDataSourceType sourceType)
         {
-
-            if (oldDataSource == null || newDataSource == null)
+            DbModels rel = new DbModels();
+            if (sourceType == DBDataSourceType.Empty)
             {
-                SetStatus(false);
-                AppendOutputText("无数据源", OutputType.Error);
-                MessageBox.Show("无数据源", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                rel.DbModel = new DBSetting() { DbName = "NULL", SchemaName = "NULL" };
+                rel.Functions = new Dictionary<string, Function>();
+                rel.Procs = new Dictionary<string, Function>();
+                rel.Tables = new Dictionary<string, TableInfo>();
+                rel.Triggers = new Dictionary<string, Trigger>();
+                rel.Views = new Dictionary<string, ViewInfo>();
             }
-
-
-            cs.CheckCommon = this.cheComm.Checked;
-            cs.OutputComment = xhkOutComment.Checked;
-            cs.OutputDeleteSql = chkOutDeleteSql.Checked;
-            cs.OutputDeleteSqlIsCommon = chkOutDeleteSqlIsCommon.Checked;
-
-
-            startTime = DateTime.Now;
-            SetTotalTime();
-
-            ClearOutputText();
-            //throw new Exception("testing");
-            List<string> tempList = new List<string>();
-            List<Function> tempFunList = new List<Function>();
-            string tempStt = "";
-            string tempStr = "";
-            bool tempBool = false;
-
-            SetStatus(true);
-
-            AppendOutputText("我们正在准备一些事情，请耐心等待\n", OutputType.Comment);
-
-
-
-            if (oldDataSource.Type == DBDataSourceType.MySql)
-            {
-                using (helper = new DBStructureHelper(oldDataSource.Value))
-                {
-                    ////测试连接到数据库，以免报错
-                    //AppendOutputText("正在检查连接到旧数据库的状态，请耐心等待\n", OutputType.Comment);
-                    //if (!helper.TestLine(10000))
-                    //{
-                    //    AppendOutputText("旧数据库连接失败\n", OutputType.Comment);
-                    //    MessageBox.Show("旧数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    //    SetStatus(false);
-                    //    return;
-                    //}
-                    //else
-                    //{
-                    //    AppendOutputText("旧数据库连接成功\n", OutputType.Comment);
-                    //}
-
-
-                    oldDbName = helper.DbName;
-                    oldServerName = helper.Server;
-                    oldConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
-                }
-            }
-            else
-            {
-                oldConn.ConnectionString = oldDataSource.Value;
-            }
-
-
-            if (newDataSource.Type == DBDataSourceType.MySql)
-            {
-                using (helper = new DBStructureHelper(newDataSource.Value))
-                {
-                    ////测试连接到数据库，以免报错
-                    //AppendOutputText("正在检查连接到新数据库的状态，请耐心等待\n", OutputType.Comment);
-                    //if (!helper.TestLine(10000))
-                    //{
-                    //    AppendOutputText("新数据库连接失败\n", OutputType.Comment);
-                    //    MessageBox.Show("新数据库连接失败", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    //    SetStatus(false);
-                    //    return;
-                    //}
-                    //else
-                    //{
-                    //    AppendOutputText("新数据库连接成功\n", OutputType.Comment);
-                    //}
-
-                    newDbName = helper.DbName;
-                    newServerName = helper.Server;
-                    newConn.ConnectionString = string.Format("Server={0};Database={1};Port={2}", helper.Server, helper.DbName, helper.Port);
-                }
-            }
-            else
-            {
-                newConn.ConnectionString = newDataSource.Value;
-            }
-
-
-            AppendOutputText("\n", OutputType.None);
-            if (oldConn.ConnectionString == newConn.ConnectionString)
-            {
-                AppendOutputText("新旧数据库数据源一致 无需比较", OutputType.Error);
-                MessageBox.Show("结束对比：新旧数据库数据源一致 无需比较", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                SetStatus(false);
-                return;
-            }
-
-            ////从网卡层面判断是否联网
-            //if (!Win32API.InternetGetConnectedState(ref int tempInx, 0))
-            //{
-            //    AppendOutputText("请检查你的网络状态", OutputType.Error);
-            //    MessageBox.Show("结束对比：请检查你的网络状态", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            //    SetStatus(false);
-            //    return;
-            //}
-
-            string resultStr = Tools.GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbName, newDbName));
-
-            File.AppendAllText(resultStr + oldpathCs.Path, JsonConvert.SerializeObject(config));
-
-            if (oldDataSource.Type == DBDataSourceType.MySql && newDataSource.Type == DBDataSourceType.MySql)
-            {
-                //这里比较数据库的sqlmode
-                new CompareAndShowResultHelperBase().ShowDbDiff(oldDataSource.Value, newDataSource.Value);
-            }
-
-
-            //var c = new CompareAndShowResultHelperFactory();
-
-            if (cs.IsSearTable)
-            {
-                tempBool = true;
-                Dictionary<string, TableInfo> oldTabs = new Dictionary<string, TableInfo>();
-                Dictionary<string, TableInfo> newTabs = new Dictionary<string, TableInfo>();
-                TableCompareAndShowResultHelper viewHelper = new TableCompareAndShowResultHelper();
-                viewHelper.OutputText = AppendOutputText;
-                viewHelper.ReplaceLastLineText = ReplaceLastLineText;
-
-
-
-                #region 获取数据源
-
-                if (oldDataSource.Type== DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Tables, out oldTabs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(oldDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(oldDataSource.Value, out oldTabs))
-                        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
-                    else
-                        tempBool = false;
-                }
-                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Tables, out newTabs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(newDataSource.Value, out newTabs))
-                        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
-                    else
-                        tempBool = false;
-                }
-
-
-                //if (cs.IsFileDataPath_Table == false)
-                //{
-                //    AppendOutputText("从数据库中获取表结构\n", OutputType.Comment);
-                //    if (viewHelper.GetInfoByDb(oldConnString, out oldTabs))
-                //        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
-                //    else
-                //        tempBool = false;
-
-                //    if (viewHelper.GetInfoByDb(newConnString, out newTabs))
-                //        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
-                //    else
-                //        tempBool = false;
-                //}
-                //else
-                //{
-
-                //    AppendOutputText("从文件中获取表结构\n", OutputType.Comment);
-                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Tables, out oldTabs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + oldpathCs.Tables, JsonConvert.SerializeObject(oldTabs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-
-                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Tables, out newTabs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + newpathCs.Tables, JsonConvert.SerializeObject(newTabs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //}
-                #endregion
-
-
-                if (cs.IsDiff)
-                {
-                    viewHelper.CompareAndShow(oldTabs, newTabs, cs, out string errorString);
-
-                    if (string.IsNullOrEmpty(errorString) && tempBool)
-                    {
-                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        //compIsError = true;
-                        File.AppendAllText(resultStr + diffpathCs.Tables, RtxResult.Text);
-                    }
-                    else
-                    {
-                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
-                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-
-                    tempStr = RtxResult.Text;
-                }
-            }
-
-
-            if (cs.IsSearView)
-            {
-
-                tempBool = true;
-                Dictionary<string, ViewInfo> views = new Dictionary<string, ViewInfo>();
-                Dictionary<string, ViewInfo> newViews = new Dictionary<string, ViewInfo>();
-                ViewCompareAndShowResultHelper viewHelper = new ViewCompareAndShowResultHelper();
-                viewHelper.OutputText = AppendOutputText;
-                viewHelper.ReplaceLastLineText = ReplaceLastLineText;
-
-                #region 获取数据源
-
-                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Views, out views);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(oldDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(oldDataSource.Value, out views))
-                        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
-                    else
-                        tempBool = false;
-                }
-
-                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                    tempStt = viewHelper.GetInfoByFile(newDataSource.Value, newpathCs.Views, out newViews);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(newDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
-                    if (viewHelper.GetInfoByDb(newDataSource.Value, out newViews))
-                        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
-                    else
-                        tempBool = false;
-                }
-
-
-                //if (cs.IsFileDataPath_View == false)
-                //{
-                //    AppendOutputText("从数据库中获取视图\n", OutputType.Comment);
-                //    if (viewHelper.GetInfoByDb(oldConnString, out views))
-                //        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
-                //    else
-                //        tempBool = false;
-
-                //    if (viewHelper.GetInfoByDb(newConnString, out newViews))
-                //        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
-                //    else
-                //        tempBool = false;
-
-                //}
-                //else
-                //{
-
-
-                //    AppendOutputText("从文件中获取视图\n", OutputType.Comment);
-                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Views, out views);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + oldpathCs.Views, JsonConvert.SerializeObject(views.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-
-                //    tempStt = viewHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Views, out newViews);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + newpathCs.Views, JsonConvert.SerializeObject(newViews.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //}
-                #endregion
-
-                if (cs.IsDiff)
-                {
-
-                    viewHelper.CompareAndShow(views, newViews, cs, out string errorString);
-
-                    if (string.IsNullOrEmpty(errorString) && tempBool)
-                    {
-                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                    }
-                    else
-                    {
-                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
-                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    File.AppendAllText(resultStr + diffpathCs.Views, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
-
-                    tempStr = RtxResult.Text;
-                }
-            }
-
-            if (cs.IsSearTri)
-            {
-                tempBool = true;
-                Dictionary<string, Trigger> tris = new Dictionary<string, Trigger>();
-                Dictionary<string, Trigger> newTris = new Dictionary<string, Trigger>();
-                TrigCompareAndShowResultHelper trigHelper = new TrigCompareAndShowResultHelper();
-                trigHelper.OutputText = AppendOutputText;
-                trigHelper.ReplaceLastLineText = ReplaceLastLineText;
-
-
-                #region 获取数据源
-
-
-                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                    tempStt = trigHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Trigs, out tris);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(oldDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
-                    if (trigHelper.GetInfoByDb(oldDataSource.Value, out tris))
-                        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
-                    else
-                        tempBool = false;
-                }
-
-                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                    tempStt = trigHelper.GetInfoByFile(newDataSource.Value, newpathCs.Trigs, out newTris);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(newDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
-                    if (trigHelper.GetInfoByDb(newDataSource.Value, out newTris))
-                        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
-                    else
-                        tempBool = false;
-                }
-
-
-
-                //if (cs.IsFileDataPath_Trig == false)
-                //{
-                //    AppendOutputText("从数据库中获取触发器\n", OutputType.Comment);
-                //    if (trigHelper.GetInfoByDb(oldConnString, out tris))
-                //        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
-                //    else
-                //        tempBool = false;
-
-                //    if (trigHelper.GetInfoByDb(newConnString, out newTris))
-                //        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
-                //    else
-                //        tempBool = false;
-                //}
-                //else
-                //{
-
-                //    AppendOutputText("从文件中获取触发器\n", OutputType.Comment);
-                //    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Trigs, out tris);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + oldpathCs.Trigs, JsonConvert.SerializeObject(tris.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-
-                //    tempStt = trigHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Trigs, out newTris);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + newpathCs.Trigs, JsonConvert.SerializeObject(newTris.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //}
-                #endregion
-
-
-
-                if (cs.IsDiff)
-                {
-
-                    trigHelper.CompareAndShow(tris, newTris, cs, out string errorString);
-
-                    if (string.IsNullOrEmpty(errorString) && tempBool)
-                    {
-                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Trigs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
-                    }
-                    else
-                    {
-                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
-                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-
-                    tempStr = RtxResult.Text;
-                }
-            }
-
-
-
-            if (cs.IsSearProc)
-            {
-                tempBool = true;
-                Dictionary<string, Function> procs = new Dictionary<string, Function>();
-                Dictionary<string, Function> newProcs = new Dictionary<string, Function>();
-                ProcCompareAndShowResultHelper funcHelper = new ProcCompareAndShowResultHelper();
-                funcHelper.OutputText = AppendOutputText;
-                funcHelper.ReplaceLastLineText = ReplaceLastLineText;
-
-
-                #region 获取数据源
-
-                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Procs, out procs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(oldDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(oldDataSource.Value, out procs))
-                        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
-                    else
-                        tempBool = false;
-                }
-                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Procs, out newProcs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(newDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(newDataSource.Value, out newProcs))
-                        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
-                    else
-                        tempBool = false;
-                }
-
-
-                //if (cs.IsFileDataPath_Proc == false)
-                //{
-                //    AppendOutputText("从数据库中获取存储过程\n", OutputType.Comment);
-                //    if (funcHelper.GetInfoByDb(oldConnString, out procs))
-                //        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
-                //    else
-                //        tempBool = false;
-
-                //    if (funcHelper.GetInfoByDb(newConnString, out newProcs))
-                //        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
-                //    else
-                //        tempBool = false;
-
-
-                //}
-                //else
-                //{
-                //    AppendOutputText("从文件中获取存储过程\n", OutputType.Comment);
-                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Procs, out procs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + oldpathCs.Procs, JsonConvert.SerializeObject(procs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-
-                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Procs, out newProcs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + newpathCs.Procs, JsonConvert.SerializeObject(newProcs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //}
-
-
-                #endregion
-
-                if (cs.IsDiff)
-                {
-                    funcHelper.CompareAndShow(procs, newProcs, cs, out string errorString);
-                    //CompareAndShowResult(procs, newProcs, cs, out string errorString);
-
-                    if (string.IsNullOrEmpty(errorString) && tempBool)
-                    {
-                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Procs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
-                    }
-                    else
-                    {
-                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
-                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-
-                    tempStr = RtxResult.Text;
-                }
-            }
-
-
-
-            if (cs.IsSearFunc)
-            {
-                tempBool = true;
-                Dictionary<string, Function> funcs = new Dictionary<string, Function>();
-                Dictionary<string, Function> newFuncs = new Dictionary<string, Function>();
-                FuncCompareAndShowResultHelper funcHelper = new FuncCompareAndShowResultHelper();
-                funcHelper.OutputText = AppendOutputText;
-                funcHelper.ReplaceLastLineText = ReplaceLastLineText;
-
-
-                #region 获取数据源
-
-                if (oldDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(oldDataSource.Value, oldpathCs.Funcs, out funcs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(oldDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(oldDataSource.Value, out funcs))
-                        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
-                    else
-                        tempBool = false;
-                }
-
-                if (newDataSource.Type == DBDataSourceType.DataSourceFile)
-                {
-                    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                    tempStt = funcHelper.GetInfoByFile(newDataSource.Value, newpathCs.Funcs, out newFuncs);
-                    if (string.IsNullOrWhiteSpace(tempStt))
-                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
-                    else
-                    {
-                        tempBool = false;
-                        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                    }
-                }
-                else if(newDataSource.Type == DBDataSourceType.MySql)
-                {
-                    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
-                    if (funcHelper.GetInfoByDb(newDataSource.Value, out newFuncs))
-                        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
-                    else
-                        tempBool = false;
-                }
-
-
-
-                //if (cs.IsFileDataPath_Func == false)
-                //{
-                //    AppendOutputText("从数据库中获取函数\n", OutputType.Comment);
-                //    if (funcHelper.GetInfoByDb(oldConnString, out funcs))
-                //        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
-                //    else
-                //        tempBool = false;
-
-                //    if (funcHelper.GetInfoByDb(newConnString, out newFuncs))
-                //        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
-                //    else
-                //        tempBool = false;
-                //}
-                //else
-                //{
-                //    AppendOutputText("从文件中获取函数\n", OutputType.Comment);
-                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, oldpathCs.Funcs, out funcs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + oldpathCs.Funcs, JsonConvert.SerializeObject(funcs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //    tempStt = funcHelper.GetInfoByFile(cs.FileDataPath, newpathCs.Funcs, out newFuncs);
-                //    if (string.IsNullOrWhiteSpace(tempStt))
-                //        File.AppendAllText(resultStr + newpathCs.Funcs, JsonConvert.SerializeObject(newFuncs.Values));
-                //    else
-                //    {
-                //        tempBool = false;
-                //        AppendOutputText(tempStt + "\r\n", OutputType.Error);
-                //    }
-                //}
-
-                #endregion
-
-
-                if (cs.IsDiff)
-                {
-
-                    funcHelper.CompareAndShow(funcs, newFuncs, cs, out string errorString);
-
-                    if (string.IsNullOrEmpty(errorString) && tempBool)
-                    {
-                        AppendOutputText("对比完毕\n\n", OutputType.Comment);
-                        File.AppendAllText(resultStr + diffpathCs.Funcs, string.IsNullOrWhiteSpace(tempStr) ? RtxResult.Text : RtxResult.Text.Replace(tempStr, ""));
-                    }
-                    else
-                    {
-                        //string tips = string.Concat("对比中发现以下问题，请修正后重新进行比较：\n\n", errorString);
-                        //MessageBox.Show(tips, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-
-                }
-            }
-
-            //bool compIsError = false;
-
-            AppendOutputText("\n", OutputType.Comment);
-            AppendOutputText("执行完毕\n", OutputType.Comment);
-
-            SetStatus(false);
-            //try
-            //{
-            //    AbortTh();
-            //}
-            //catch (Exception)
-            //{
-            //}
+            return rel;
         }
 
+        public string GetShowConnectionString(DBDataSource dBDataSource)
+        {
+            if (dBDataSource.Type == DBDataSourceType.DataSourceFile)
+            {
+                return dBDataSource.Key;
+            }
+            if (dBDataSource.Type == DBDataSourceType.MySql)
+            {
+                try
+                {
+                    string val = dBDataSource.Value;
+                    List<string> rel = new List<string>();
+                    foreach (var item in dBDataSource.Value.Split(';'))
+                    {
+                        if (string.IsNullOrEmpty(item))
+                            continue;
 
+                        if (item.IndexOf("=") < 1)
+                        {
+                            rel.Add(item);
+                            continue;
+                        }
+
+                        if (item.Split('=')[0].ToLower() == "pwd" || item.Split('=')[0].ToLower() == "password")
+                        {
+                            continue;
+                        }
+                        rel.Add(item);
+
+                    }
+                    return string.Join(";", rel);
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+            }
+            return dBDataSource.Value;
+        }
+        
+        
         //定义更新输出的委托
         public delegate bool OutputTextHander(string text, OutputType type);
         public delegate bool ClearTextHander();

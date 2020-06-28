@@ -51,17 +51,27 @@ namespace DBUp_Mysql
             }
             return rel;
         }
-        public static Dictionary<string, T> GetInfo<T>(string dirName, string fileName) where T : DBInfo
+        public static List<T> GetInfo<T>(string dirName, string fileName) where T :class, new()
         {
-            Dictionary<string, T> rel = new Dictionary<string, T>();
+            List<T>  rel = new List<T>();
             try
             {
                 string resultStr = Tools.ReadFileString(dirName, fileName);
-                List<T> newtabRel = JsonConvert.DeserializeObject<List<T>>(resultStr);
-                foreach (var tab in newtabRel)
-                {
-                    rel.Add(tab.Name, tab);
-                }
+                rel = JsonConvert.DeserializeObject<List<T>>(resultStr);
+            }
+            catch (Exception)
+            {
+                //文件读取失败时 返回一个空的集合
+            }
+            return rel;
+        }
+        public static T GetModel<T>(string dirName, string fileName) where T:class,new()
+        {
+            T rel = new T();
+            try
+            {
+                string resultStr = Tools.ReadFileString(dirName, fileName);
+                return JsonConvert.DeserializeObject<T>(resultStr);
 
             }
             catch (Exception)

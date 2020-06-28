@@ -1,0 +1,10 @@
+{
+  "Server": "localhost",
+  "Port": 3306,
+  "SchemaName": "test",
+  "DbName": "test",
+  "SqlMode": "STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
+  "Version": "5.7.17-log",
+  "TransactionIsolationType": "REPEATABLE-READ",
+  "Name": null
+}
