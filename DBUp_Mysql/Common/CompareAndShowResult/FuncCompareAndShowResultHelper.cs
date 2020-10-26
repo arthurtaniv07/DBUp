@@ -167,7 +167,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment);
                         Output(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddFuncSql(newItems[viewName]);
-                        AppendLine(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql, SqlType.Create);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
@@ -179,7 +179,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment);
                         Output(string.Format("生成创建{0}{1}的SQL\n", viewName, temp), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddProcsSql(newItems[viewName]);
-                        AppendLine(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql, SqlType.Create);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
@@ -263,22 +263,22 @@ namespace DBUp_Mysql
                         if (isFun)
                         {
                             string dropViewSql = dHelper.GetDropFuncSql(tableName);
-                            AppendLine(dropViewSql, OutputType.Sql);
+                            AppendLine(dropViewSql, OutputType.Sql, SqlType.Alter);
                             //OutputText(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment);
                             Output(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment, setting, SqlType.Common);
                             string addViewSql = dHelper.GetAddFuncSql(newItems[tableName]);
-                            AppendLine(addViewSql, OutputType.Sql);
+                            AppendLine(addViewSql, OutputType.Sql, SqlType.Alter);
                             //OutputText("\n", OutputType.None);
                             Output("\n", OutputType.None, setting, SqlType.Common);
                         }
                         else
                         {
                             string dropViewSql = dHelper.GetDropProcsSql(tableName);
-                            AppendLine(dropViewSql, OutputType.Sql);
+                            AppendLine(dropViewSql, OutputType.Sql, SqlType.Alter);
                             //OutputText(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment);
                             Output(string.Format("生成创建{0}{1}的SQL\n", tableName, temp), OutputType.Comment, setting, SqlType.Common);
                             string addViewSql = dHelper.GetAddProcsSql(newItems[tableName]);
-                            AppendLine(addViewSql, OutputType.Sql);
+                            AppendLine(addViewSql, OutputType.Sql, SqlType.Alter);
                             //OutputText("\n", OutputType.None);
                             Output("\n", OutputType.None, setting, SqlType.Common);
                         }

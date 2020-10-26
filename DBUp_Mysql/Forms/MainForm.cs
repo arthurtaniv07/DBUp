@@ -221,6 +221,7 @@ namespace DBUp_Mysql
         
         private void Start()
         {
+            //cs.IsDebug = true;
             if (cs.IsDebug)
             {
 
@@ -257,6 +258,7 @@ namespace DBUp_Mysql
         }
 
 
+        string resultStr = "";
         private void StartCompare()
         {
 
@@ -382,7 +384,6 @@ namespace DBUp_Mysql
             }
             #endregion
 
-            string resultStr = "";
             if (tempBool)
             {
                 resultStr = Tools.GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbModels.DbModel.DbName, newDbModels.DbModel.DbName));
@@ -825,9 +826,16 @@ namespace DBUp_Mysql
             //}
         }
 
-
+        public delegate void SetStatusCallback(bool isStart);
         private void SetStatus(bool isStart)
         {
+            if (this.InvokeRequired)
+            {
+                SetStatusCallback d = new SetStatusCallback(SetStatus);
+                this.Invoke(d, new object[] { isStart });
+                Application.DoEvents();
+                return;
+            }
             if (isStart)
             {
                 this.btnCompare.Tag = "1";
@@ -958,11 +966,11 @@ namespace DBUp_Mysql
 
         //解决在获取进度的时候跳动的问题
         bool isFirstReplace = true;
-        public bool AppendOutputText(string text, OutputType type)
+        public bool AppendOutputText(string text, OutputType type, SqlType sqlType = 0)
         {
             isFirstReplace = true;
             Color color = Color.Black;
-            if (type == OutputType.Comment)
+            if (type == OutputType.Comment || type == OutputType.Loading)
                 color = Color.DarkGray;
             else if (type == OutputType.Warning)
                 color = Color.Orange;
@@ -996,16 +1004,20 @@ namespace DBUp_Mysql
                 //    RtxResult.Refresh();
                 //}));
                 SetTextCallback d = new SetTextCallback(AppendOutputText);
-                this.Invoke(d, new object[] { text, type });
+                this.Invoke(d, new object[] { text, type, sqlType });
                 Application.DoEvents();
             }
             else
             {
                 RtxResult.SelectionColor = color;
                 //_lastTextColor = color;
-
                 if (type != OutputType.Sql && type != OutputType.None)
-                    RtxResult.AppendText("-- ");
+                    text.Insert(0, "-- ");
+
+                //同种类型输出到文件
+                if (sqlType != SqlType.Common && sqlType != 0)
+                    File.AppendAllText(resultStr + "diff_" + sqlType + ".txt", text + StOs.NewLine);
+
 
                 RtxResult.AppendText(text);
                 RtxResult.Focus();
@@ -1024,12 +1036,12 @@ namespace DBUp_Mysql
             return true;
         }
         // 定义委托类型
-        delegate bool SetTextCallback(string content, OutputType type = OutputType.Comment);
+        delegate bool SetTextCallback(string content, OutputType type = OutputType.Comment, SqlType sqlType = 0);
         /// <summary>
         /// 替换最后一行的文本
         /// </summary>
         /// <param name="content"></param>
-        public bool ReplaceLastLineText(string content, OutputType type = OutputType.Comment)
+        public bool ReplaceLastLineText(string content, OutputType type = OutputType.Comment, SqlType sqlType = 0)
         {
             try
             {
@@ -1057,7 +1069,7 @@ namespace DBUp_Mysql
                     //    RtxResult.Refresh();
                     //}));
                     SetTextCallback d = new SetTextCallback(ReplaceLastLineText);
-                    this.Invoke(d, new object[] { content, type });
+                    this.Invoke(d, new object[] { content, type, sqlType });
                     Application.DoEvents();
                 }
                 else

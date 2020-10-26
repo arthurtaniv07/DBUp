@@ -7,7 +7,7 @@ using System.Text;
 
 namespace DBUp_Mysql
 {
-    public delegate bool OutPutTextHander(string str, OutputType type = OutputType.Comment);
+    public delegate bool OutPutTextHander(string str, OutputType type = OutputType.Comment, SqlType sqlType = 0);
     public delegate string GetResultTextHander();
     public abstract class CompareAndShowResultHelperBase : ICompareAndShowResult
     {
@@ -25,10 +25,10 @@ namespace DBUp_Mysql
         public OutPutTextHander DeleteLastLintText { get; set; }
         public OutPutTextHander ReplaceLastLineText { get; set; }
 
-        List<Tuple<string, OutputType>> ts = new List<Tuple<string, OutputType>>();
-        public void AppendLine(string str, OutputType type)
+        List<Tuple<string, OutputType, SqlType>> ts = new List<Tuple<string, OutputType, SqlType>>();
+        public void AppendLine(string str, OutputType type, SqlType sqlType)
         {
-            ts.Add(new Tuple<string, OutputType>(str, type));
+            ts.Add(new Tuple<string, OutputType, SqlType>(str, type, sqlType));
         }
 
 
@@ -41,7 +41,7 @@ namespace DBUp_Mysql
             }
             foreach (var item in ts)
             {
-                OutputText(item.Item1, item.Item2);
+                OutputText(item.Item1, item.Item2, item.Item3);
             }
             ts.Clear();
         }
@@ -60,10 +60,10 @@ namespace DBUp_Mysql
             }
             if (tabCount == i || true)
             {
-                ReplaceLastLineText(string.Format("当前进度：{0}% {1}/{2} ，耗时：" + Tools.GetTimeSpan(DateTime.Now - startTime), ToPrecision(i * 100.0 / tabCount, 2), i, tabCount, currTabName), OutputType.Comment);
+                ReplaceLastLineText(string.Format("当前进度：{0}% {1}/{2} ，耗时：" + Tools.GetTimeSpan(DateTime.Now - startTime), ToPrecision(i * 100.0 / tabCount, 2), i, tabCount, currTabName), OutputType.Loading);
             }
             else
-                ReplaceLastLineText(string.Format("当前进度：{0}% {1}/{2} ({3}) ", ToPrecision(i * 100.0 / tabCount, 2), i, tabCount, currTabName), OutputType.Comment);
+                ReplaceLastLineText(string.Format("当前进度：{0}% {1}/{2} ({3}) ", ToPrecision(i * 100.0 / tabCount, 2), i, tabCount, currTabName), OutputType.Loading);
         }
 
 
@@ -93,10 +93,10 @@ namespace DBUp_Mysql
             }
             if (appendLing)
             {
-                AppendLine(text, outputType);
+                AppendLine(text, outputType, sqlType);
                 return;
             }
-            OutputText(text, outputType);
+            OutputText(text, outputType, sqlType);
         }
 
         public abstract bool GetInfoByDb(string connStr, ref DbModels rel);

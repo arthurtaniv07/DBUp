@@ -167,35 +167,36 @@ namespace DBUp_Mysql
 
     public enum OutputType
     {
-        None,
-        Comment,
-        Warning,
-        Error,
-        Sql,
+        None = 0,
+        Comment = 1,
+        Warning = 2,
+        Error = 3,
+        Sql = 4,
+        Loading = 5,
     }
     /// <summary>
     /// 数据库对象类型
     /// </summary>
     public enum DBObjType
     {
-        Table,
-        View,
-        Trig,
-        Proc,
-        Func,
-        DBSetting
+        Table = 1,
+        View = 2,
+        Trig = 3,
+        Proc = 4,
+        Func = 5,
+        DBSetting = 6
     }
     public enum SortedOptionType
     {
-        NONE,
+        NONE = 0,
         /// <summary>
         /// 第一
         /// </summary>
-        FIRST,
+        FIRST = 1,
         /// <summary>
         /// 在之后
         /// </summary>
-        AFTER
+        AFTER = 2
 
     }
     /// <summary>
@@ -223,11 +224,11 @@ namespace DBUp_Mysql
 
     public enum SqlType
     {
-        Common,
-        Delete,
-        Alter,
-        Create,
-        ChangeSetting
+        Common = 1,
+        Delete = 2,
+        Alter = 4,
+        Create = 8,
+        ChangeSetting = 16
     }
 
     class Structs

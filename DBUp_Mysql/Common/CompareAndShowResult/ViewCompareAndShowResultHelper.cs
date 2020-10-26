@@ -112,7 +112,7 @@ namespace DBUp_Mysql
                     //OutputText(string.Format("生成创建{0}视图的SQL\n", viewName), OutputType.Comment);
                     Output(string.Format("生成创建{0}视图的SQL\n", viewName), OutputType.Comment, setting, SqlType.Common);
                     string addViewSql = dHelper.GetAddViewSql(newItems[viewName].CreateSQL);
-                    AppendLine(addViewSql, OutputType.Sql);
+                    AppendLine(addViewSql, OutputType.Sql, SqlType.Create);
                     //OutputText("\n", OutputType.None);
                     Output("\n", OutputType.None, setting, SqlType.Common);
                 }
@@ -161,7 +161,7 @@ namespace DBUp_Mysql
                         //OutputText(string.Format("生成创建{0}视图的SQL\n", tableName), OutputType.Comment);
                         Output(string.Format("生成修改{0}视图的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetEditViewSql(newItems[tableName].CreateSQL);
-                        AppendLine(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql, SqlType.Alter);
                     }
 
                 }

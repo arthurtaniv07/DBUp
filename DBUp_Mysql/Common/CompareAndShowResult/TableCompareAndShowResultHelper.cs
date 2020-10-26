@@ -116,7 +116,7 @@ namespace DBUp_Mysql
                     // 通过MySQL提供的功能得到建表SQL
                     var tabInfo = newItems[tableName];
                     string createTableSql = tabInfo.CreateSql;
-                    AppendLine(createTableSql, OutputType.Sql);
+                    AppendLine(createTableSql, OutputType.Sql, SqlType.Create);
                     //OutputText("\n", OutputType.None);
                     Output("\n", OutputType.None, setting, SqlType.Common);
                 }
@@ -199,7 +199,7 @@ namespace DBUp_Mysql
                                 fieldName = tempSort.NewValue;
                             }
                             string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName], offset, fieldName);
-                            AppendLine(addColumnSql, OutputType.Sql);
+                            AppendLine(addColumnSql, OutputType.Sql, SqlType.Create);
                         }
 
                     }
@@ -248,7 +248,7 @@ namespace DBUp_Mysql
                                 }
                                 // 根据新的列属性进行修改
                                 string changeColumnSql = dHelper.GetChangeTableColumnSql(tableName, newColumnInfo, offset, fieldName);
-                                AppendLine(changeColumnSql, OutputType.Sql);
+                                AppendLine(changeColumnSql, OutputType.Sql, SqlType.Alter);
                             }
                         }
                     }
@@ -263,7 +263,7 @@ namespace DBUp_Mysql
                         foreach (var item in sss)
                         {
                             string sortFieldSql = dHelper.GetModifySort(tableName, newTableInfo.AllColumnInfo[item.OptionValue], item.OptionType.ToString(), item.NewValue);
-                            AppendLine(sortFieldSql, OutputType.Sql);
+                            AppendLine(sortFieldSql, OutputType.Sql, SqlType.Alter);
                         }
                     }
 
@@ -291,7 +291,7 @@ namespace DBUp_Mysql
                         {
                             // 再重新设置
                             string addPrimaryKeySql = dHelper.GetAddPrimarySql(tableName, newTableInfo.PrimaryKeyColumnNames);
-                            AppendLine(addPrimaryKeySql, OutputType.Sql);
+                            AppendLine(addPrimaryKeySql, OutputType.Sql, SqlType.Alter);
                         }
                     }
 
@@ -328,7 +328,7 @@ namespace DBUp_Mysql
                         foreach (TableIndex tabInx in addIndexNames)
                         {
                             string addIndexSql = dHelper.GetAddIndexSql(tableName, tabInx);
-                            AppendLine(addIndexSql, OutputType.Sql);
+                            AppendLine(addIndexSql, OutputType.Sql, SqlType.Create);
                         }
                     }
                     // 找出同名索引的变动
@@ -362,10 +362,10 @@ namespace DBUp_Mysql
                                     Output(string.Format("    注释：{0} => {1}\n", oldIndex.Common, newIndex.Common), OutputType.Comment, setting, SqlType.Common);
                                 // 先删除
                                 string dropIndexSql = dHelper.GetDropIndexSql(tableName, name);
-                                AppendLine(dropIndexSql, OutputType.Sql);
+                                AppendLine(dropIndexSql, OutputType.Sql, SqlType.Alter);
                                 // 再重新创建
                                 string addIndexSql = dHelper.GetAddIndexSql(tableName, newIndex);
-                                AppendLine(addIndexSql, OutputType.Sql);
+                                AppendLine(addIndexSql, OutputType.Sql, SqlType.Alter);
                             }
                         }
                     }
@@ -377,7 +377,7 @@ namespace DBUp_Mysql
                         //AppendLine(string.Format("  校对集：\"{0}\" => \"{1}\"\n", oldTableInfo.Collation, newTableInfo.Collation), OutputType.Comment);
                         Output(string.Format("  校对集：\"{0}\" => \"{1}\"\n", oldTableInfo.Collation, newTableInfo.Collation), OutputType.Comment, setting, SqlType.Common);
                         string alterTableComment = dHelper.GetChangeCollateSql(tableName, newTableInfo.Collation);
-                        AppendLine(alterTableComment, OutputType.Sql);
+                        AppendLine(alterTableComment, OutputType.Sql, SqlType.Alter);
                     }
 
                     // 对比表注释
@@ -386,7 +386,7 @@ namespace DBUp_Mysql
                         //AppendLine(string.Format("  注释：\"{0}\" => \"{1}\"\n", oldTableInfo.Comment, newTableInfo.Comment), OutputType.Comment);
                         Output(string.Format("  注释：\"{0}\" => \"{1}\"\n", oldTableInfo.Comment, newTableInfo.Comment), OutputType.Comment, setting, SqlType.Common);
                         string alterTableComment = dHelper.GetChangeCommentSql(tableName, newTableInfo.Comment);
-                        AppendLine(alterTableComment, OutputType.Sql);
+                        AppendLine(alterTableComment, OutputType.Sql, SqlType.Alter);
                     }
 
 
@@ -401,7 +401,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  自动增加：{0} => {1}\n", oldTableInfo.Option.Auto_Increment, newTableInfo.Option.Auto_Increment), OutputType.Comment);
                             Output(string.Format("  自动增加：{0} => {1}\n", oldTableInfo.Option.Auto_Increment, newTableInfo.Option.Auto_Increment), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Auto_Increment), newTableInfo.Option.Auto_Increment);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.Avg_Row_Length != newTableInfo.Option.Avg_Row_Length)
@@ -409,7 +409,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  平均记录长度：{0} => {1}\n", oldTableInfo.Option.Avg_Row_Length, newTableInfo.Option.Avg_Row_Length), OutputType.Comment);
                             Output(string.Format("  平均记录长度：{0} => {1}\n", oldTableInfo.Option.Avg_Row_Length, newTableInfo.Option.Avg_Row_Length), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Avg_Row_Length), newTableInfo.Option.Avg_Row_Length);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.Checksum != newTableInfo.Option.Checksum)
@@ -417,7 +417,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  检查记录和：{0} => {1}\n", oldTableInfo.Option.Checksum, newTableInfo.Option.Checksum), OutputType.Comment);
                             Output(string.Format("  检查记录和：{0} => {1}\n", oldTableInfo.Option.Checksum, newTableInfo.Option.Checksum), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Checksum), newTableInfo.Option.Checksum);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.COMPRESSION != newTableInfo.Option.COMPRESSION)
@@ -425,7 +425,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  压缩方式：{0} => {1}\n", oldTableInfo.Option.COMPRESSION, newTableInfo.Option.COMPRESSION), OutputType.Comment);
                             Output(string.Format("  压缩方式：{0} => {1}\n", oldTableInfo.Option.COMPRESSION, newTableInfo.Option.COMPRESSION), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.COMPRESSION), newTableInfo.Option.COMPRESSION);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.ENCRYPTION != newTableInfo.Option.ENCRYPTION)
@@ -433,7 +433,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  加密：{0} => {1}\n", oldTableInfo.Option.ENCRYPTION, newTableInfo.Option.ENCRYPTION), OutputType.Comment);
                             Output(string.Format("  加密：{0} => {1}\n", oldTableInfo.Option.ENCRYPTION, newTableInfo.Option.ENCRYPTION), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.ENCRYPTION), newTableInfo.Option.ENCRYPTION);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.Engine != newTableInfo.Option.Engine)
@@ -441,7 +441,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  引擎：{0} => {1}\n", oldTableInfo.Option.Engine, newTableInfo.Option.Engine), OutputType.Comment);
                             Output(string.Format("  引擎：{0} => {1}\n", oldTableInfo.Option.Engine, newTableInfo.Option.Engine), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Engine), newTableInfo.Option.Engine);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.Max_Rows != newTableInfo.Option.Max_Rows)
@@ -449,7 +449,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  最大记录行数：{0} => {1}\n", oldTableInfo.Option.Max_Rows, newTableInfo.Option.Max_Rows), OutputType.Comment);
                             Output(string.Format("  最大记录行数：{0} => {1}\n", oldTableInfo.Option.Max_Rows, newTableInfo.Option.Max_Rows), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Max_Rows), newTableInfo.Option.Max_Rows);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.Min_Rows != newTableInfo.Option.Min_Rows)
@@ -457,7 +457,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  最小记录行数：{0} => {1}\n", oldTableInfo.Option.Min_Rows, newTableInfo.Option.Min_Rows), OutputType.Comment);
                             Output(string.Format("  最小记录行数：{0} => {1}\n", oldTableInfo.Option.Min_Rows, newTableInfo.Option.Min_Rows), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.Min_Rows), newTableInfo.Option.Min_Rows);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.RowFormat != newTableInfo.Option.RowFormat)
@@ -465,7 +465,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  记录格式：{0} => {1}\n", oldTableInfo.Option.RowFormat, newTableInfo.Option.RowFormat), OutputType.Comment);
                             Output(string.Format("  记录格式：{0} => {1}\n", oldTableInfo.Option.RowFormat, newTableInfo.Option.RowFormat), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.RowFormat), newTableInfo.Option.RowFormat);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.STATS_AUTO_RECALC != newTableInfo.Option.STATS_AUTO_RECALC)
@@ -473,7 +473,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  累计数据自动重计：{0} => {1}\n", oldTableInfo.Option.STATS_AUTO_RECALC, newTableInfo.Option.STATS_AUTO_RECALC), OutputType.Comment);
                             Output(string.Format("  累计数据自动重计：{0} => {1}\n", oldTableInfo.Option.STATS_AUTO_RECALC, newTableInfo.Option.STATS_AUTO_RECALC), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.STATS_AUTO_RECALC), newTableInfo.Option.STATS_AUTO_RECALC);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.STATS_PERSISTENT != newTableInfo.Option.STATS_PERSISTENT)
@@ -481,7 +481,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  统计数据持久：{0} => {1}\n", oldTableInfo.Option.STATS_PERSISTENT, newTableInfo.Option.STATS_PERSISTENT), OutputType.Comment);
                             Output(string.Format("  统计数据持久：{0} => {1}\n", oldTableInfo.Option.STATS_PERSISTENT, newTableInfo.Option.STATS_PERSISTENT), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.STATS_PERSISTENT), newTableInfo.Option.STATS_PERSISTENT);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                         if (oldTableInfo.Option.TABLESPACE != newTableInfo.Option.TABLESPACE)
@@ -489,7 +489,7 @@ namespace DBUp_Mysql
                             //AppendLine(string.Format("  表空间：{0} => {1}\n", oldTableInfo.Option.TABLESPACE, newTableInfo.Option.TABLESPACE), OutputType.Comment);
                             Output(string.Format("  表空间：{0} => {1}\n", oldTableInfo.Option.TABLESPACE, newTableInfo.Option.TABLESPACE), OutputType.Comment, setting, SqlType.Common);
                             alterTableOption = dHelper.GetChangeOptionSql(tableName, nameof(newTableInfo.Option.TABLESPACE), newTableInfo.Option.TABLESPACE);
-                            AppendLine(alterTableOption, OutputType.Sql);
+                            AppendLine(alterTableOption, OutputType.Sql, SqlType.Alter);
                         }
 
                     }

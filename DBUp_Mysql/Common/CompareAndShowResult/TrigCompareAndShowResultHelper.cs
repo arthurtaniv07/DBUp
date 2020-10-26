@@ -110,7 +110,7 @@ namespace DBUp_Mysql
                     //OutputText(string.Format("生成创建{0}触发器的SQL\n", viewName), OutputType.Comment);
                     Output(string.Format("生成创建{0}触发器的SQL\n", viewName), OutputType.Comment, setting, SqlType.Common);
                     string addViewSql = dHelper.GetAddTrisSql(newItems[viewName]);
-                    AppendLine(addViewSql, OutputType.Sql);
+                    AppendLine(addViewSql, OutputType.Sql, SqlType.Create);
                     //OutputText("\n", OutputType.None);
                     Output("\n", OutputType.None, setting, SqlType.Common);
                 }
@@ -150,11 +150,11 @@ namespace DBUp_Mysql
                         //AppendLine("  触发器内容有变化\n", OutputType.Comment);
                         Output("  触发器内容有变化\n", OutputType.Comment, setting, SqlType.Common);
                         string dropViewSql = dHelper.GetDropTrisSql(tableName);
-                        AppendLine(dropViewSql, OutputType.Sql);
+                        AppendLine(dropViewSql, OutputType.Sql, SqlType.Alter);
                         //OutputText(string.Format("生成创建{0}触发器的SQL\n", tableName), OutputType.Comment);
                         Output(string.Format("生成创建{0}触发器的SQL\n", tableName), OutputType.Comment, setting, SqlType.Common);
                         string addViewSql = dHelper.GetAddTrisSql(newItems[tableName]);
-                        AppendLine(addViewSql, OutputType.Sql);
+                        AppendLine(addViewSql, OutputType.Sql, SqlType.Alter);
                         //OutputText("\n", OutputType.None);
                         Output("\n", OutputType.None, setting, SqlType.Common);
                     }
