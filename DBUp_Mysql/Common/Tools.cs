@@ -3,12 +3,113 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace DBUp_Mysql
 {
     public class Tools
     {
+        private static string __CurrentDirectory;
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string CurrentDirectory
+        {
+            get
+            {
+
+                return __CurrentDirectory;
+            }
+            set
+            {
+                if (string.IsNullOrWhiteSpace(__CurrentDirectory))
+                    __CurrentDirectory = value;
+                if (string.IsNullOrWhiteSpace(__CurrentDirectory))
+                    __CurrentDirectory = Environment.CurrentDirectory;
+            }
+        }
+
+
+        #region 转换参数
+
+        public static Dictionary<string, string> GetParam(string[] param)
+        {
+            Dictionary<string, string> rel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < param.Length; i += 2)
+            {
+                string key = param[i].TrimStart('-');
+                rel.Add(key, param[i + 1]);
+            }
+            return rel;
+        }
+
+        public static string GetParamString(ref Dictionary<string, string> param, string key, string defVal = null)
+        {
+            if (param.ContainsKey(key))
+            {
+                return param[key];
+            }
+            return defVal;
+        }
+        public static int GetParamInt(ref Dictionary<string, string> param, string key, int defVal = 0)
+        {
+            if (param.ContainsKey(key))
+            {
+                if (int.TryParse(param[key], out int val))
+                {
+                    return val;
+                }
+            }
+            return defVal;
+        }
+        public static long GetParamLong(ref Dictionary<string, string> param, string key, long defVal = 0)
+        {
+            if (param.ContainsKey(key))
+            {
+                if (long.TryParse(param[key], out long val))
+                {
+                    return val;
+                }
+            }
+            return defVal;
+        }
+        public static T GetParamLong<T>(ref Dictionary<string, string> param, string key, T defVal)
+        {
+            if (param.ContainsKey(key))
+            {
+                return ConvertTo(param[key], defVal);
+            }
+            return defVal;
+        }
+        private static T ConvertTo<T>(object obj, T defaultValue = default(T))
+        {
+            if (obj == null || obj == DBNull.Value)
+                return defaultValue;
+
+            Type t = typeof(T);
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>))   //支持可空类型
+                t = t.GetGenericArguments()[0];
+
+            var tryParse = t.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, Type.DefaultBinder
+                , new Type[] { obj.GetType(), t.MakeByRefType() }
+                , new ParameterModifier[] { new ParameterModifier(2) });
+
+            if (tryParse != null)
+            {
+                var parameters = new object[] { obj, Activator.CreateInstance(t) };
+                bool success = (bool)tryParse.Invoke(null, parameters);
+                if (success)
+                    return (T)parameters[1];
+                else
+                    return defaultValue;
+            }
+
+            return (T)Convert.ChangeType(obj, typeof(T));
+        }
+        #endregion
+
         public static string GetTimeSpan(TimeSpan ts)
         {
             List<int> rel = new List<int>();
@@ -43,7 +144,7 @@ namespace DBUp_Mysql
             if (!path.EndsWith("/"))
                 path += "/";
 
-            string rel = path.Contains(":") ? path : Environment.CurrentDirectory + path;
+            string rel = path.Contains(":") ? path : Tools.CurrentDirectory + path;
 
             if (isCreate && !Directory.Exists(rel))
             {
@@ -91,7 +192,7 @@ namespace DBUp_Mysql
             {
                 if (currDir == null)
                 {
-                    currDir = Environment.CurrentDirectory;
+                    currDir = Tools.CurrentDirectory;
                 }
                 resultStr = currDir + string.Format("/DataSourceFile/{0}/{1}", dirName.StartsWith("/") ? dirName.Substring(1) : dirName, fileName);
             }

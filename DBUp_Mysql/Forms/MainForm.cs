@@ -132,11 +132,11 @@ namespace DBUp_Mysql
 
 
             //从配置文件加载Setting
-            if (File.Exists(Environment.CurrentDirectory + "/Setting.txt"))
+            if (File.Exists(Tools.CurrentDirectory + "/Setting.txt"))
             {
                 try
                 {
-                    cs = JsonConvert.DeserializeObject<Setting>(File.ReadAllText(Environment.CurrentDirectory + "/Setting.txt"));
+                    cs = JsonConvert.DeserializeObject<Setting>(File.ReadAllText(Tools.CurrentDirectory + "/Setting.txt"));
                 }
                 catch (Exception)
                 {
@@ -241,7 +241,10 @@ namespace DBUp_Mysql
                     string content = e.ToString();
                     //StMailHelper.CheckSend("1578403183@qq.com", "DBUp_MySql", "程序出错", content.Replace("\r\n", "<br />"));
                     content = content.Insert(0, string.Format("---------------{0}---------------", DateTime.Now.ToString()));
-                    string resultStr = Environment.CurrentDirectory + string.Format("/result/{0}-Error.txt", DateTime.Now.ToString("yyyyMMdd"));
+                    string resultDir = Tools.CurrentDirectory + "/result";
+                    if (!Directory.Exists(resultDir))
+                        Directory.CreateDirectory(resultDir);
+                    string resultStr = resultDir + string.Format("/{0}-Error.txt", DateTime.Now.ToString("yyyyMMdd"));
 
                     File.AppendAllText(resultStr, content);
                     MessageBox.Show(e.ToString());
@@ -953,8 +956,11 @@ namespace DBUp_Mysql
             return true;
         }
 
+        //解决在获取进度的时候跳动的问题
+        bool isFirstReplace = true;
         public bool AppendOutputText(string text, OutputType type)
         {
+            isFirstReplace = true;
             Color color = Color.Black;
             if (type == OutputType.Comment)
                 color = Color.DarkGray;
@@ -1066,8 +1072,10 @@ namespace DBUp_Mysql
                     RtxResult.Focus();
                     //System.Threading.Thread.Sleep(10);
                     //File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
-                    RtxResult.ScrollToCaret();
                     RtxResult.Refresh();
+                    if (isFirstReplace)
+                        RtxResult.ScrollToCaret();
+                    isFirstReplace = false;
                 }
                 ////System.Threading.Thread.Sleep(10);
                 ////File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText Start" + "\r\n");
@@ -1080,7 +1088,7 @@ namespace DBUp_Mysql
                 ////File.AppendAllText(Environment.CurrentDirectory + "/1.txt", "ReplaceLastLineText END" + "\r\n");
                 //RtxResult.ScrollToCaret();
                 return true;
-                return false;
+                //return false;
             }
             catch (Exception e)
             {
