@@ -22,6 +22,7 @@ namespace DBUp_Mysql
             Tools.CurrentDirectory = Tools.GetParamString(ref param, "out");
 
 
+            //Application.Run(new MainForm());
             Application.Run(new MainForm());
         }
     }

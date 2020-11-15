@@ -69,8 +69,12 @@
     <Compile Include="Common\StMailHelper.cs" />
     <Compile Include="Common\ConfigHelper.cs" />
     <Compile Include="Common\SortingOption.cs" />
+    <None Include="Content\DataSetting.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="DB\DBSqlHelper.cs" />
     <Compile Include="Model\Config.cs" />
+    <Compile Include="Model\DataInfo\Dto\DataTableInfo.cs" />
     <Compile Include="Model\DBConnection.cs" />
     <Compile Include="Common\FormTools.cs" />
     <Compile Include="Model\DBDataSource.cs" />

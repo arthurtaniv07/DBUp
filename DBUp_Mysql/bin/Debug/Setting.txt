@@ -1,5 +1,5 @@
 {
-    "IsDebug": false,
+    "IsDebug": true,
     "CheckCommon": false,
     "IsSearTable": true,
     "IsSearView": true,

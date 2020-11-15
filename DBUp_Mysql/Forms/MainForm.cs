@@ -52,7 +52,8 @@ namespace DBUp_Mysql
         {
             InitializeComponent();
         }
-        public void SetPathSetting(PathSetting cs, string targ) {
+        public void SetPathSetting(PathSetting cs, string targ)
+        {
 
             cs.Tables = targ + pathCs.Tables;
             cs.Funcs = targ + pathCs.Funcs;
@@ -63,6 +64,7 @@ namespace DBUp_Mysql
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
+            lblTotalTime.Visible = false;
             //加载数据源
             #region 加载数据源
 
@@ -214,10 +216,21 @@ namespace DBUp_Mysql
         Timer totalTime = null;
         DateTime startTime = default(DateTime);
 
-        public void SetTotalTime()
+        public void SetTotalTime(params object[] param)
         {
-            //lblTotalTime.Text = lblTotalTime.Tag + Tools.GetTimeSpan(DateTime.Now - startTime);
+            string str = lblTotalTime.Tag + Tools.GetTimeSpan(DateTime.Now - startTime);
+            if (this.InvokeRequired)
+            {
+                ConCallback d = new ConCallback(SetTotalTime);
+                this.Invoke(d, new object[] { });
+                Application.DoEvents();
+                return;
+            }
+            lblTotalTime.Visible = true;
+            lblTotalTime.Text = str;
+
         }
+        
         
         private void Start()
         {
@@ -827,6 +840,7 @@ namespace DBUp_Mysql
         }
 
         public delegate void SetStatusCallback(bool isStart);
+        public delegate void ConCallback(params object[] param);
         private void SetStatus(bool isStart)
         {
             if (this.InvokeRequired)
@@ -1168,6 +1182,22 @@ namespace DBUp_Mysql
         {
             var val = this.chkOutDeleteSql.Checked;
             this.chkOutDeleteSqlIsCommon.Visible = val;
+        }
+
+
+        //选择配置文件
+        private void btn_openDataSetting_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openfile = new OpenFileDialog();
+            //openfile.InitialDirectory = @"";
+            openfile.Title = "请选择数据对比配置文件";
+            //过滤文件类型
+            openfile.Filter = "Json配置文件|*.Json|文本文件|*.txt";
+            if (DialogResult.OK == openfile.ShowDialog())
+            {
+                //将选择的文件的全路径赋值给文本框
+                textBox1.Text = openfile.FileName;
+            }
         }
     }
 

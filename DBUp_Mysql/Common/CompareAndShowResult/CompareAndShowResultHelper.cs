@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DBUp_Mysql.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,12 @@ namespace DBUp_Mysql.Common.CompareAndShowResult
         public override string GetInfoByFile(string dirName, string fileName, ref DbModels list)
         {
             throw new NotImplementedException();
+        }
+
+
+        public void CompareData(string oldConnStr, string newCommStr, DataTableInfo oldTable, DataTableInfo newTable)
+        {
+
         }
     }
 }

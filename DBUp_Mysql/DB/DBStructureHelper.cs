@@ -1,4 +1,5 @@
-﻿using MySql.Data.MySqlClient;
+﻿using DBUp_Mysql.Model;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -393,7 +394,7 @@ namespace DBUp_Mysql
                     string extra = dtColumnInfo.Rows[i]["EXTRA"].ToString();
                     if (!string.IsNullOrEmpty(extra))
                     {
-                        if (columnKey.IndexOf("auto_increment", StringComparison.CurrentCultureIgnoreCase) != -1)
+                        if (extra.IndexOf("auto_increment", StringComparison.CurrentCultureIgnoreCase) != -1)
                             columnInfo.IsAutoIncrement = true;
                     }
 
@@ -1308,6 +1309,23 @@ DELIMITER ;
         #endregion
 
 
+        // ----------- 数据 ------------
+
+        public DataTable GetTableData(DataTableInfo tableInfo)
+        {
+
+            Open();
+            if (Conn.State == ConnectionState.Open)
+            {
+                // 查询端口
+                string sql = $"select {string.Join(",", tableInfo.Columns)} from {tableInfo.TableName}";
+                MySqlCommand cmd = new MySqlCommand(sql, Conn);
+                DataTable dtColumnInfo = _ExecuteSqlCommand(cmd);
+                
+                return dtColumnInfo;
+            }
+            return null;
+        }
     }
 
 
