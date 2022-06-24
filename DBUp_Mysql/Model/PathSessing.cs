@@ -7,6 +7,8 @@ namespace DBUp_Mysql
 {
     public class PathSetting
     {
+
+
         public string Path { get; set; } = "pathSetting.txt";
         public string Setting { get; set; } = "Setting.txt";
         public string Tables { get; set; } = "Tables.txt";

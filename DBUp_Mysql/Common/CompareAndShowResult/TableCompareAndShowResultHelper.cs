@@ -1,61 +1,183 @@
 ﻿using DBUp_Mysql.Model;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace DBUp_Mysql
 {
+    public class SortHelper<T>
+    {
+        public IEnumerable<T> OldList { get; private set; }
+        public IEnumerable<T> NewList { get; private set; }
+        public SortedSet<SortedOption<T>> Result { get; private set; }
+        public SortHelper(IEnumerable<T> oldList, IEnumerable<T> newList)
+        {
+            //OldList = oldList;
+            //NewList = newList;
+
+            var _old = oldList.ToArray();
+            var _new = newList.ToArray();
+
+
+
+            //先将old顺序变化为new
+            foreach (var item in _new)
+            {
+
+            }
+
+        }
+        //交换数组的两个指定索引的元素
+        public void Swap<TItem>(ref TItem[] list, int inx1, int inx2)
+        {
+            var temp = list[inx1];
+            list[inx1] = list[inx2];
+            list[inx2] = temp;
+        }
+
+
+
+
+    }
     
     public class TableCompareAndShowResultHelper : CompareAndShowResultHelperBase, ICompareAndShowResult
     {
         private List<DataTableInfo> DataDiffSetting = null;
+        private Setting Setting = null;
 
-
+        public object ComObj;
         public TableCompareAndShowResultHelper() { }
+        public TableCompareAndShowResultHelper(Setting cs) 
+            : this()
+        {
+            Setting = cs;
+        }
 
 
         public TableCompareAndShowResultHelper(List<DataTableInfo> dataDiffSetting)
         {
             DataDiffSetting = dataDiffSetting;
         }
-
+        
         public override bool GetInfoByDb(string connStr, ref DbModels rel)
         {
             rel.Tables = new Dictionary<string, TableInfo>();
             using (Helper = new DBStructureHelper(connStr))
             {
-                if (Helper.Open())
-                {
-                    OutputText?.Invoke("开始获取数据库表结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
-                    Helper.Set_DbHander(SetLen);
-                    if (Helper.GetTables(out List<string> tempList, out string errorMsg))
-                    {
-                        OutputText?.Invoke("  获取到 " + tempList.Count + " 个表\n", OutputType.Comment);
-                        OutputText?.Invoke("...", OutputType.Comment);
-                        foreach (string tabName in tempList)
-                        {
-                            rel.Tables.Add(tabName, Helper.GetTableInfo(tabName));
-                        }
-                        OutputText?.Invoke("\n", OutputType.None);
-                        OutputText?.Invoke("\n", OutputType.Comment);
-                        return true;
-                    }
-                    else
-                    {
-                        OutputText?.Invoke("获取表信息失败：" + errorMsg, OutputType.Comment);
-                        return false;
-                    }
-                }
-                else
+                if (Helper.Open() == false)
                 {
                     OutputText("打开数据库失败(" + Helper.DbName + ")", OutputType.Comment);
                     return false;
                 }
+                OutputText?.Invoke("开始获取数据库表结构(" + Helper.Server + (Helper.Port == "-1" ? "" : ":" + Helper.Port) + "  " + Helper.DbName + ")\n", OutputType.Comment);
+                Helper.Set_DbHander(SetLen);
+                if (Helper.GetTables(out List<string> tempList, out string errorMsg) == false)
+                {
+                    OutputText?.Invoke("获取表信息失败：" + errorMsg, OutputType.Comment);
+                    return false;
+                }
+
+                foreach (var tabName in tempList)
+                {
+                    rel.Tables.Add(tabName, null);
+                }
+
+                //获取表成功开始获取表信息
+
+
+                OutputText?.Invoke("  获取到 " + tempList.Count + " 个表\n", OutputType.Comment);
+                OutputText?.Invoke("...", OutputType.Comment);
+                if (Setting == null || Setting.TaskCount == 1)
+                {
+                    foreach (string tabName in tempList)
+                    {
+                        rel.Tables[tabName] = Helper.GetTableInfo(tabName);
+                    }
+                }
+                else
+                {
+                    var asyncHelper = new AsyncHelper<string, TableInfo>(Setting.TaskCount, tempList, (string tabName) =>
+                    {
+                        using (var Helper111 = new DBStructureHelper(connStr))
+                        {
+                            if (Helper111.Open() == false)
+                            {
+                                OutputText("打开数据库失败(" + Helper.DbName + ")", OutputType.Comment);
+                                return null;
+                            }
+                            return Helper111.GetTableInfo(tabName);
+                        }
+                    });
+                    //MessageBox.Show(Setting.TaskCount+"");
+                    ////asyncHelper.ComObj = ComObj;
+                    //asyncHelper.SuccessHander = (string aa, TableInfo a, int count) =>
+                    //{
+                    //    //System.Diagnostics.Process[] lProcs = System.Diagnostics.Process.GetProcessesByName("DBUp_Mysql");
+
+                    //    //if (lProcs.Length > 0)
+                    //    //{
+                    //    //    IntPtr handle = lProcs[0].MainWindowHandle;
+
+                    //    //    if (handle != IntPtr.Zero)
+                    //    //    {
+                    //    //        //SendMessage(handle, 0x60, IntPtr.Zero, "");
+                    //    //        PostMessage(handle, 0x60, "1", "2");
+                    //    //        Application.DoEvents();
+                    //    //    }
+                    //    //}
+                    //    //MessageBox.Show(count+"");
+                    //};
+                    asyncHelper.Start();
+
+                    while (true)
+                    {
+                        SetLen("", tempList.Count, asyncHelper.Get().Count);
+                        if (asyncHelper.IsAllAbort())
+                        {
+                            SetLen("", tempList.Count, asyncHelper.Get().Count);
+                            break;
+                        }
+                        System.Threading.Thread.Sleep(100);
+                    }
+
+                    rel.Tables = asyncHelper.Get();
+                    if (rel.Tables.Count != tempList.Count)
+                    {
+                        //出错了 获取的数据不一致
+                        //抛出错误
+                        throw asyncHelper.LastError ?? new Exception("rel.Tables.Count != tempList.Count");
+
+                    }
+                }
+
+
+                OutputText?.Invoke("\n", OutputType.None);
+                OutputText?.Invoke("\n", OutputType.Comment);
+                return true;
             }
         }
+        // SendMessage
+        // 向窗体发送消息
+        // @para1: 窗体句柄
+        // @para2: 消息类型
+        // @para3: 附加的消息信息
+        // @para4: 附加的消息信息
+        [DllImport("User32.dll", EntryPoint = "SendMessage")]
+        private static extern int SendMessage(
+            IntPtr hWnd,
+            int Msg,
+            IntPtr wParam,
+            string lParam);
+
+        [DllImport("user32.dll ", CharSet = CharSet.Unicode)]
+        public static extern IntPtr PostMessage(IntPtr hwnd, int wMsg, string wParam, string lParam);
 
         public override string GetInfoByFile(string dirName, string fileName, ref DbModels list)
         {
@@ -132,7 +254,7 @@ namespace DBUp_Mysql
                     Output("----------------------------------------------\n", OutputType.Comment, setting, SqlType.Common);
                     Output(string.Format("表：{0}\n", tableName), OutputType.Comment, setting, SqlType.Common);
                     TableInfo newTableInfo = newItems[tableName];
-                    TableInfo oldTableInfo = oldItems[tableName];
+                    TableInfo oldTableInfo = JsonConvert.DeserializeObject<TableInfo>(JsonConvert.SerializeObject(oldItems[tableName]));
 
                     // 进行表结构比较
 
@@ -151,58 +273,45 @@ namespace DBUp_Mysql
                             string dropColumnSql = dHelper.GetDropTableColumnSql(tableName, columnName);
                             Output(dropColumnSql, OutputType.Sql, setting, SqlType.Delete);
                         }
-                    }
-
-
-
-                    // 找出新增列
-                    List<string> addColumnNames = new List<string>();
-                    foreach (string columnName in newTableInfo.AllColumnInfo.Keys)
-                    {
-                        if (!oldTableInfo.AllColumnInfo.ContainsKey(columnName))
-                            addColumnNames.Add(columnName);
-                    }
-                    List<string> oldCols = oldTableInfo.TableNames;
-                    List<string> newCols = newTableInfo.TableNames;
-                    foreach (var item in dropColumnNames)
-                        if (oldCols.Contains(item))
-                            oldCols.Remove(item);
-                    foreach (var item in addColumnNames)
-                        if (!oldCols.Contains(item))
-                            oldCols.Add(item);
-                    FieldSortedOption<string> fieldSortedOption = new FieldSortedOption<string>();
-                    fieldSortedOption.NewList = newCols;
-                    fieldSortedOption.OldList = oldCols;
-
-                    var sortingOption = new SortingOption<string>();
-                    sortingOption.GetSortedOption(ref fieldSortedOption);
-                    List<string> sortFielded = new List<string>();
-                    SortedOption<string> tempSort;
-                    if (addColumnNames.Count > 0)
-                    {
-                        Output(string.Format("  新版本中新增以下列：{0}\n", JoinString(addColumnNames, ",")), OutputType.Comment, setting, SqlType.Common);
-                        foreach (string columnName in addColumnNames)
+                        foreach (string columnName in dropColumnNames)
                         {
-                            bool isChecked = sortingOption.IsChecked(columnName, out tempSort);
-                            string offset = null;
-                            string fieldName = null;
-                            if (isChecked)
-                            {
-                                sortFielded.Add(columnName);
-                                offset = tempSort.OptionType.ToString();
-                                fieldName = tempSort.NewValue;
-                            }
-                            string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName], offset, fieldName);
-                            AppendLine(addColumnSql, OutputType.Sql, SqlType.Create);
+                            oldTableInfo.AllColumnInfo.Remove(columnName);
                         }
-
+                        oldTableInfo.SetColumnIndex();
                     }
+
+
+
+                    //// 找出新增列
+                    //SortedList<string, int> addColumnNames = new SortedList<string, int>();
+                    //var colInx = -1;
+                    //foreach (string columnName in newTableInfo.AllColumnInfo.Keys)
+                    //{
+                    //    colInx++;
+                    //    if (!oldTableInfo.AllColumnInfo.ContainsKey(columnName))
+                    //        addColumnNames.Add(columnName, colInx);
+                    //}
+                    //List<string> oldCols = oldTableInfo.TableNames;
+                    //List<string> newCols = newTableInfo.TableNames;
+                    //foreach (var item in dropColumnNames)
+                    //    if (oldCols.Contains(item))
+                    //        oldCols.Remove(item);
+                    //foreach (var item in addColumnNames.Keys)
+                    //    if (!oldCols.Contains(item))
+                    //        oldCols.Add(item);
+
+
+                    string preColumn = null;
+
                     // 找出列属性修改
                     foreach (string columnName in newTableInfo.AllColumnInfo.Keys)
                     {
+                        
+                        ColumnInfo newColumnInfo = newTableInfo.AllColumnInfo[columnName];
+
                         if (oldTableInfo.AllColumnInfo.ContainsKey(columnName))
                         {
-                            ColumnInfo newColumnInfo = newTableInfo.AllColumnInfo[columnName];
+                            //修改
                             ColumnInfo oldColumnInfo = oldTableInfo.AllColumnInfo[columnName];
                             // 比较各个属性
                             bool isDataTypeSame = newColumnInfo.DataType.Equals(oldColumnInfo.DataType);
@@ -212,11 +321,14 @@ namespace DBUp_Mysql
                             bool isNotEmptySame = newColumnInfo.IsNotEmpty == oldColumnInfo.IsNotEmpty;
                             bool isAutoIncrementSame = newColumnInfo.IsAutoIncrement == oldColumnInfo.IsAutoIncrement;
                             bool isDefaultValueSame = newColumnInfo.DefaultValue.Equals(oldColumnInfo.DefaultValue);
-                            if (isDataTypeSame == false || isCommentSame == false || isNotEmptySame == false || isAutoIncrementSame == false || isDefaultValueSame == false)
+                            bool isColumnIndex = newColumnInfo.ColumnIndex == oldColumnInfo.ColumnIndex;
+                            if (isDataTypeSame == false || isCommentSame == false || isNotEmptySame == false || isAutoIncrementSame == false || isDefaultValueSame == false || isColumnIndex == false)
                             {
                                 Output(string.Format("  列：{0}\n", columnName), OutputType.Comment, setting, SqlType.Common);
                                 if (isDataTypeSame == false)
                                     Output(string.Format("    属性：数据类型{0} => {1}\n", oldColumnInfo.DataType, newColumnInfo.DataType), OutputType.Comment, setting, SqlType.Common);
+                                if (isColumnIndex == false)
+                                    Output(string.Format("    顺序：{0} => {1}\n", oldColumnInfo.ColumnIndex, newColumnInfo.ColumnIndex), OutputType.Comment, setting, SqlType.Common);
                                 if (isCommentSame == false)
                                     Output(string.Format("    属性：列注释\"{0}\" => \"{1}\"\n", oldColumnInfo.Comment, newColumnInfo.Comment), OutputType.Comment, setting, SqlType.Common);
                                 if (isNotEmptySame == false)
@@ -226,37 +338,60 @@ namespace DBUp_Mysql
                                 if (isDefaultValueSame == false)
                                     Output(string.Format("    属性：默认值{0}  =>  {1}\n", oldColumnInfo.DefaultValue, newColumnInfo.DefaultValue), OutputType.Comment, setting, SqlType.Common);
 
-                                bool isChecked = sortingOption.IsChecked(columnName, out tempSort);
-                                string offset = null;
-                                string fieldName = null;
-                                if (isChecked)
-                                {
-                                    sortFielded.Add(columnName);
-                                    offset = tempSort.OptionType.ToString();
-                                    fieldName = tempSort.NewValue;
-                                }
+                                var offset = preColumn == null ? SortedOptionType.FIRST : SortedOptionType.AFTER;
+                                var fieldName = preColumn;
+
                                 // 根据新的列属性进行修改
-                                string changeColumnSql = dHelper.GetChangeTableColumnSql(tableName, newColumnInfo, offset, fieldName);
+                                var changeColumnSql = dHelper.GetChangeTableColumnSql(tableName, newColumnInfo, offset.ToString(), fieldName);
                                 AppendLine(changeColumnSql, OutputType.Sql, SqlType.Alter);
+                                oldTableInfo.ChangeColumn(oldColumnInfo, offset, fieldName);
                             }
                         }
-                    }
-                    if ( fieldSortedOption.Checked)
-                    {
-                        var sss = fieldSortedOption.Options.Where(i => !sortFielded.Contains(i.OptionValue) && i.OptionType != SortedOptionType.NONE);
-                        if (sss.Any())
+                        else
                         {
-                            Output("  新版本数据库字段顺序改变\n", OutputType.Comment, setting, SqlType.Common);
+                            //新增
+                            var offset = preColumn == null ? SortedOptionType.FIRST  : SortedOptionType.AFTER ;
+                            var fieldName = preColumn;
+                            var changeColumnSql = dHelper.GetAddTableColumnSql(tableName, newColumnInfo, offset.ToString(), fieldName);
+                            AppendLine(changeColumnSql, OutputType.Sql, SqlType.Alter);
+                            oldTableInfo.AddColumn(newColumnInfo, offset, fieldName);
+
                         }
-                        foreach (var item in sss)
-                        {
-                            string sortFieldSql = dHelper.GetModifySort(tableName, newTableInfo.AllColumnInfo[item.OptionValue], item.OptionType.ToString(), item.NewValue);
-                            AppendLine(sortFieldSql, OutputType.Sql, SqlType.Alter);
-                        }
+                        oldTableInfo.SetColumnIndex();
+
+                        preColumn = columnName;
                     }
+                    //if ( fieldSortedOption.Checked)
+                    //{
+                    //    var sss = fieldSortedOption.Options.Where(i => !sortFielded.Contains(i.OptionValue) && i.OptionType != SortedOptionType.NONE);
+                    //    if (sss.Any())
+                    //    {
+                    //        Output("  新版本数据库字段顺序改变\n", OutputType.Comment, setting, SqlType.Common);
+                    //    }
+                    //    foreach (var item in sss)
+                    //    {
+                    //        string sortFieldSql = dHelper.GetModifySort(tableName, newTableInfo.AllColumnInfo[item.OptionValue], item.OptionType.ToString(), item.NewValue);
+                    //        AppendLine(sortFieldSql, OutputType.Sql, SqlType.Alter);
+                    //    }
+                    //}
 
-                    //新增列后再修改顺序
+                    ////修改完列后在添加字段
 
+                    //if (addColumnNames.Count > 0)
+                    //{
+                    //    Output(string.Format("  新版本中新增以下列：{0}\n", JoinString(addColumnNames.Keys, ",")), OutputType.Comment, setting, SqlType.Common);
+                    //    foreach (var column in addColumnNames)
+                    //    {
+
+                    //        var columnName = column.Key;
+                    //        string offset = column.Value < 1 ? SortedOptionType.FIRST.ToString() : SortedOptionType.AFTER.ToString();
+                    //        string fieldName = column.Value < 1 ? null : addColumnNames.ElementAt(column.Value - 1).Key;
+
+                    //        string addColumnSql = dHelper.GetAddTableColumnSql(tableName, newTableInfo.AllColumnInfo[columnName], offset, fieldName);
+                    //        AppendLine(addColumnSql, OutputType.Sql, SqlType.Create);
+                    //    }
+
+                    //}
 
 
                     // 在改变列属性前需先同步索引设置，因为自增属性仅可用于设置了索引的列

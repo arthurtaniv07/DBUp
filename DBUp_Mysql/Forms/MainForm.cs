@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections;
+using DBUp_Mysql.Forms;
 
 namespace DBUp_Mysql
 {
@@ -32,21 +33,24 @@ namespace DBUp_Mysql
         Dictionary<string, DBDataSource> sourceList = new Dictionary<string, DBDataSource>();
         DBDataSource oldDataSource = null;
         DBDataSource newDataSource = null;
-        public void ReloadDataSource()
+        public Dictionary<string, DBDataSource> ReloadDataSource()
         {
+            var rel = new Dictionary<string, DBDataSource>();
+            rel.Add("【空】", new DBDataSource() { Key = "【空】", Type = DBDataSourceType.Empty, Value = "" });
+
+
             var dbSource = ConfigHelper.GetConnections();
-            var fileSourcce =  Tools.GetConnections();
-            sourceList.Clear();
-            sourceList.Add("【空】", new DBDataSource() { Key = "【空】", Type = DBDataSourceType.Empty, Value = "" });
+            var fileSourcce = Tools.GetConnections();
 
             foreach (var item in dbSource)
             {
-                sourceList.Add(item.Key, item.Value);
+                rel.Add(item.Key, item.Value);
             }
             foreach (var item in fileSourcce)
             {
-                sourceList.Add(item.Key, item.Value);
+                rel.Add(item.Key, item.Value);
             }
+            return rel;
         }
         public MainForm()
         {
@@ -62,16 +66,15 @@ namespace DBUp_Mysql
             cs.Views = targ + pathCs.Views;
             cs.DBSetting = targ + pathCs.DBSetting;
         }
-        private void MainForm_Load(object sender, EventArgs e)
+
+        public void f_reloadDataSource()
         {
-            lblTotalTime.Visible = false;
-            //加载数据源
             #region 加载数据源
 
             int inx = -1;
             int oldInx = -1;
             int newInx = -1;
-            ReloadDataSource();
+            sourceList = ReloadDataSource();
             //this.ddlOldDb.DataSource = sourceList.Values;
             foreach (var item in sourceList.Values)
             {
@@ -96,7 +99,49 @@ namespace DBUp_Mysql
                 if (this.ddlNewDb.Items.Count > 0) this.ddlNewDb.SelectedIndex = 0;
             }
             #endregion
+        }
+        private void MainForm_Load(object sender, EventArgs e)
+        {
 
+            //{
+            //    var temp_list = new List<string>();
+            //    for (int i = 0; i < 10000; i++)
+            //    {
+            //        temp_list.Add("test " + i);
+            //    }
+
+            //    var temp_asyncHelper = new AsyncHelper<string, string>(50, temp_list);
+
+            //    temp_asyncHelper.Action = delegate (string name)
+            //    {
+            //        if (temp_asyncHelper.Get().Count % 100 == 0)
+            //            System.Threading.Thread.Sleep(100);
+            //        return "";
+            //    };
+
+            //    //temp_asyncHelper.SuccessCountHander=delegate(int c)
+
+            //    temp_asyncHelper.Start(true);
+
+            //    //while (true)
+            //    //{
+            //    //    if (temp_asyncHelper.IsAllAbort())
+            //    //    {
+            //    //        break;
+            //    //    }
+            //    //    System.Threading.Thread.Sleep(100);
+            //    //}
+
+            //    var aaa = temp_asyncHelper.Get();
+
+            //    MessageBox.Show($"Result = {temp_list.Count == aaa.Count}    temp_list.Count={temp_list.Count} , aaa.Count={aaa.Count}");
+
+            //    return;
+            //}
+
+            lblTotalTime.Visible = false;
+            //加载数据源
+            f_reloadDataSource();
 
 
             SetPathSetting(oldpathCs, "old");
@@ -159,12 +204,14 @@ namespace DBUp_Mysql
             this.chkDiffProc.Checked = cs.IsSearProc;
             this.chkDiffTrigger.Checked = cs.IsSearTri;
             this.chkDiffView.Checked = cs.IsSearView;
-
+            this.textBox2.Text = Math.Max(cs.TaskCount, 1).ToString();
 
             totalTime = new Timer();
             totalTime.Interval = 500;
             totalTime.Tick += TotalTime_Tick;
 
+
+            //this.btnExchangeDataSource.
         }
 
         private void TotalTime_Tick(object sender, EventArgs e)
@@ -175,11 +222,19 @@ namespace DBUp_Mysql
         System.Threading.Thread t = null;
         private void btnCompare_Click(object sender, EventArgs e)
         {
-
+            //Dictionary<string, string> aaa = new Dictionary<string, string>();
+            //aaa.Add("stu", "1");
+            //aaa.Add("Id", "1");
+            //aaa.Add("Age", "1");
+            //foreach (var item in aaa)
+            //{
+            //    MessageBox.Show(item.Key);
+            //}
+            //return;
 
             if (this.ddlOldDb.SelectedItem == null || this.ddlNewDb.SelectedItem == null)
             {
-                MessageBox.Show("请选择数据库", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("请选择数据库", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             if (this.ddlOldDb.SelectedItem.ToString() == this.ddlNewDb.SelectedItem.ToString())
@@ -222,7 +277,7 @@ namespace DBUp_Mysql
             if (this.InvokeRequired)
             {
                 ConCallback d = new ConCallback(SetTotalTime);
-                this.Invoke(d, new object[] { });
+                this.Invoke(d, new object[] { null });
                 Application.DoEvents();
                 return;
             }
@@ -299,11 +354,24 @@ namespace DBUp_Mysql
             cs.IsSearTri = this.chkDiffTrigger.Checked;
             cs.IsSearView = this.chkDiffView.Checked;
 
+            //线程个数
+            try
+            {
+                cs.TaskCount = Convert.ToInt32(this.textBox2.Text);
+            }
+            catch (Exception)
+            {
+                cs.TaskCount = 1;
+            }
+            if (cs.TaskCount < 1)
+                cs.TaskCount = 1;
+            if (cs.TaskCount > 20)
+                cs.TaskCount = 20;
 
 
             //处理数据源字符串
-            config.OldConnection.ConnectionString = GetShowConnectionString(oldDataSource);
-            config.NewConnection.ConnectionString = GetShowConnectionString(newDataSource);
+            config.OldConnection.ConnectionString = Tools.GetShowConnectionString(oldDataSource);
+            config.NewConnection.ConnectionString = Tools.GetShowConnectionString(newDataSource);
             config.OldConnection.ProviderName = oldDataSource.ProviderName;
             config.NewConnection.ProviderName = newDataSource.ProviderName;
 
@@ -400,7 +468,7 @@ namespace DBUp_Mysql
             if (tempBool)
             {
                 resultStr = Tools.GetDirFullPath(string.Format("/result/{0}-{1}-{2}/", DateTime.Now.ToString("yyyyMMddHHmmss"), oldDbModels.DbModel.DbName, newDbModels.DbModel.DbName));
-
+                cs.OutputPath = resultStr;
 
                 File.AppendAllText(resultStr + oldpathCs.DBSetting, JsonConvert.SerializeObject(oldDbModels.DbModel));
                 File.AppendAllText(resultStr + newpathCs.DBSetting, JsonConvert.SerializeObject(newDbModels.DbModel));
@@ -448,7 +516,7 @@ namespace DBUp_Mysql
             if (cs.IsSearTable)
             {
                 tempBool = true;
-                TableCompareAndShowResultHelper viewHelper = new TableCompareAndShowResultHelper();
+                TableCompareAndShowResultHelper viewHelper = new TableCompareAndShowResultHelper(cs);
                 viewHelper.OutputText = AppendOutputText;
                 viewHelper.ReplaceLastLineText = ReplaceLastLineText;
 
@@ -887,46 +955,6 @@ namespace DBUp_Mysql
             return rel;
         }
 
-        public string GetShowConnectionString(DBDataSource dBDataSource)
-        {
-            if (dBDataSource.Type == DBDataSourceType.DataSourceFile)
-            {
-                return dBDataSource.Key;
-            }
-            if (dBDataSource.Type == DBDataSourceType.MySql)
-            {
-                try
-                {
-                    string val = dBDataSource.Value;
-                    List<string> rel = new List<string>();
-                    foreach (var item in dBDataSource.Value.Split(';'))
-                    {
-                        if (string.IsNullOrEmpty(item))
-                            continue;
-
-                        if (item.IndexOf("=") < 1)
-                        {
-                            rel.Add(item);
-                            continue;
-                        }
-
-                        if (item.Split('=')[0].ToLower() == "pwd" || item.Split('=')[0].ToLower() == "password")
-                        {
-                            continue;
-                        }
-                        rel.Add(item);
-
-                    }
-                    return string.Join(";", rel);
-                }
-                catch (Exception)
-                {
-
-                    throw;
-                }
-            }
-            return dBDataSource.Value;
-        }
         
         
         //定义更新输出的委托
@@ -1188,6 +1216,8 @@ namespace DBUp_Mysql
         //选择配置文件
         private void btn_openDataSetting_Click(object sender, EventArgs e)
         {
+            MessageBox.Show("【数据对比】功能暂未开放 敬请期待！！！ ^_^");
+            return;
             OpenFileDialog openfile = new OpenFileDialog();
             //openfile.InitialDirectory = @"";
             openfile.Title = "请选择数据对比配置文件";
@@ -1199,6 +1229,66 @@ namespace DBUp_Mysql
                 textBox1.Text = openfile.FileName;
             }
         }
+
+        private void btnExchangeDataSource_Click(object sender, EventArgs e)
+        {
+            //交换数据源
+
+            if (this.ddlOldDb.SelectedItem == null || this.ddlNewDb.SelectedItem == null)
+            {
+                MessageBox.Show("请选择数据库", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (this.ddlOldDb.SelectedItem.ToString() == this.ddlNewDb.SelectedItem.ToString())
+            {
+
+                MessageBox.Show("新旧数据库不能重复", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var oldSourceName = this.ddlOldDb.SelectedItem.ToString();
+            var newSourceName = this.ddlNewDb.SelectedItem.ToString();
+
+            this.ddlOldDb.SelectedItem = newSourceName;
+            this.ddlNewDb.SelectedItem = oldSourceName;
+
+        }
+
+        Form tip_btnExchangeDataSource = null;
+        private void btnExchangeDataSource_MouseHover(object sender, EventArgs e)
+        {
+            if (cs.IsTipMessage)
+                tip_btnExchangeDataSource = FrmAnchorTips.ShowTips(this.btnExchangeDataSource, "交换数据源", AnchorTipsLocation.TOP);
+        }
+
+        private void btnExchangeDataSource_MouseMove(object sender, MouseEventArgs e)
+        {
+        }
+
+        private void btnExchangeDataSource_MouseLeave(object sender, EventArgs e)
+        {
+            if (tip_btnExchangeDataSource != null)
+            {
+                tip_btnExchangeDataSource.Close();
+                this.Activate();
+            }
+        }
+
+        //protected override void DefWndProc(ref Message m)
+        //{
+        //    if (m.Msg == 0x60)
+        //    {
+        //        IntPtr pData = new IntPtr();
+        //        int iDataLen = 64;
+        //        byte[] byData = new byte[128];
+        //        System.Runtime.InteropServices.Marshal.Copy(pData, byData, 0, iDataLen);
+        //        string strData = System.Text.Encoding.ASCII.GetString(byData);
+
+        //        MessageBox.Show("DefWndProc-Test888888-" + strData);
+        //        return;
+        //    }
+        //    base.DefWndProc(ref m);
+        //}
     }
 
 }

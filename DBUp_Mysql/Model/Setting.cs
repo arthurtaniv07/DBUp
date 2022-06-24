@@ -8,6 +8,11 @@ namespace DBUp_Mysql
     public class Setting
     {
         /// <summary>
+        /// 输出的结果路径
+        /// </summary>
+        [Newtonsoft.Json.JsonIgnore]
+        public string OutputPath { get; set; } = "";
+        /// <summary>
         /// 是否调试
         /// </summary>
         public bool IsDebug { get; set; } = true;
@@ -57,5 +62,12 @@ namespace DBUp_Mysql
         /// 是否将删除语句输出为注释 （不受<see cref="OutputComment"/>影响）
         /// </summary>
         public bool OutputDeleteSqlIsCommon { get; set; } = false;
+
+        /// <summary>
+        /// 线程个数
+        /// </summary>
+        public int TaskCount { get; set; } = 1;
+
+        public bool IsTipMessage { get; set; }
     }
 }

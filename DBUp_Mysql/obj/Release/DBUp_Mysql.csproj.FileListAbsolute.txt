@@ -26,3 +26,5 @@ E:\WorkSpace\DBUp\DBUp_Mysql\obj\Release\DBUp_Mysql.csproj.CoreCompileInputs.cac
 E:\WorkSpace\DBUp\DBUp_Mysql\obj\Release\DBUp_Mysql.csproj.CopyComplete
 E:\WorkSpace\DBUp\DBUp_Mysql\obj\Release\DBUp_Mysql.exe
 E:\WorkSpace\DBUp\DBUp_Mysql\obj\Release\DBUp_Mysql.pdb
+E:\WorkSpace\DBUp\DBUp_Mysql\bin\Release\Content\DataSetting.json
+E:\WorkSpace\DBUp\DBUp_Mysql\bin\Release\Setting.txt

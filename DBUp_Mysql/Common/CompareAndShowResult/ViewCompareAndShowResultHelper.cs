@@ -142,8 +142,8 @@ namespace DBUp_Mysql
                         Output(string.Format("  校对集（Client）：\"{0}\" => \"{1}\"\n", oldTableInfo.ClientCharSet, newTableInfo.ClientCharSet), OutputType.Comment, setting, SqlType.Common);
                     }
                     //避免DEFINER 和注释产生影响
-                    string oldSql = oldTableInfo.CreateSQL;//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + oldTableInfo.Name + "`"));
-                    string newSql = newTableInfo.CreateSQL;//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + newTableInfo.Name + "`"));
+                    string oldSql = oldTableInfo.CreateSQL.Replace("\r", "");//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + oldTableInfo.Name + "`"));
+                    string newSql = newTableInfo.CreateSQL.Replace("\r", "");//.Substring(oldTableInfo.CreateSQL.IndexOf("`" + newTableInfo.Name + "`"));
 
 
                     string flagTypeStr = "VIEW";

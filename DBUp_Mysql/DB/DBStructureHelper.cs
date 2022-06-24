@@ -368,6 +368,8 @@ namespace DBUp_Mysql
                 {
 
                     ColumnInfo columnInfo = new ColumnInfo();
+                    // 顺序
+                    columnInfo.ColumnIndex = i;
                     // 表名
                     columnInfo.TableName = tableName;
                     // 列名
@@ -429,7 +431,7 @@ namespace DBUp_Mysql
             }
 
             //处理进度
-            GetDBTableInfohander(tableName, TabsCount, TabsInx);
+            //GetDBTableInfohander(tableName, TabsCount, TabsInx);
             return tableInfo;
         }
 
@@ -704,9 +706,15 @@ CREATE TABLE `test_arthurtable` (
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)), string.Format(_DROP_COLUMN_SQL, columnName));
         }
         private const string _ADD_COLUMN_SQL = "ADD COLUMN {0};\n";
+
         /// <summary>
         /// 获取添加列的SQL
         /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnInfo"></param>
+        /// <param name="offset"><see cref="SortedOptionType"/>的字符串</param>
+        /// <param name="fieldName">相对于<see cref="offset"/>的值 ，offset=FIRST时无效</param>
+        /// <returns></returns>
         public string GetAddTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
@@ -726,6 +734,7 @@ CREATE TABLE `test_arthurtable` (
         /// <summary>
         /// 获取修改列的SQL
         /// </summary>
+        /// <param name="offset">null or BEFORE or AFTER</param>
         public string GetChangeTableColumnSql(string tableName, ColumnInfo columnInfo, string offset = null, string fieldName = null)
         {
             return string.Concat(string.Format(_ALTER_TABLE_SQL, _SchemaTabName(tableName)),
@@ -734,6 +743,14 @@ CREATE TABLE `test_arthurtable` (
         }
 
         private const string _ChangeOrAddTableColumnSql = " `{0}` {1} {2}{3} COMMENT '{4}'{5}";
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="columnInfo"></param>
+        /// <param name="offset">null or BEFORE or AFTER</param>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
         private string GetChangeOrAddTableColumnSql(string tableName, ColumnInfo columnInfo, string offset, string fieldName)
         {
             /*

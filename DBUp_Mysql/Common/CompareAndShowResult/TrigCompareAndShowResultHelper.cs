@@ -143,8 +143,8 @@ namespace DBUp_Mysql
                     //    AppendLine(string.Format("  SQLModel：\"{0}\" => \"{1}\"\n", oldTableInfo.SQLMode, newTableInfo.SQLMode), OutputType.Comment);
                     //}
                     //避免DEFINER 和注释产生影响
-                    string oldSql = oldTableInfo.Statement;
-                    string newSql = newTableInfo.Statement;
+                    string oldSql = oldTableInfo.Statement.Replace("\r", "");
+                    string newSql = newTableInfo.Statement.Replace("\r", "");
                     if (!oldSql.Equals(newSql))
                     {
                         //AppendLine("  触发器内容有变化\n", OutputType.Comment);

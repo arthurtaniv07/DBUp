@@ -275,6 +275,94 @@ namespace DBUp_Mysql
                 return string.Join(separateString, list);
             }
         }
+
+
+        #region MySql ConnectionString
+
+
+        public static string GetShowConnectionString(DBDataSource dBDataSource)
+        {
+            if (dBDataSource.Type == DBDataSourceType.DataSourceFile)
+            {
+                return dBDataSource.Key;
+            }
+            if (dBDataSource.Type == DBDataSourceType.MySql)
+            {
+                try
+                {
+                    string val = dBDataSource.Value;
+                    List<string> rel = new List<string>();
+                    foreach (var item in dBDataSource.Value.Split(';'))
+                    {
+                        if (string.IsNullOrEmpty(item))
+                            continue;
+
+                        if (item.IndexOf("=") < 1)
+                        {
+                            rel.Add(item);
+                            continue;
+                        }
+
+                        var name = item.Split('=')[0].ToLower();
+                        if (name == "pwd" || name == "password")
+                        {
+                            continue;
+                        }
+                        rel.Add(item);
+
+                    }
+                    return string.Join(";", rel);
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+            }
+            return dBDataSource.Value;
+        }
+        public static string GetCtrlShowConnectionString(DBDataSource dBDataSource)
+        {
+            if (dBDataSource.Type == DBDataSourceType.DataSourceFile)
+            {
+                return dBDataSource.Key;
+            }
+            if (dBDataSource.Type == DBDataSourceType.MySql)
+            {
+                try
+                {
+                    string val = dBDataSource.Value;
+                    List<string> rel = new List<string>();
+                    foreach (var item in dBDataSource.Value.Split(';'))
+                    {
+                        if (string.IsNullOrEmpty(item))
+                            continue;
+
+                        if (item.IndexOf("=") < 1)
+                        {
+                            rel.Add(item);
+                            continue;
+                        }
+                        var name = item.Split('=')[0].ToLower();
+                        if (name == "pwd" || name == "password")
+                        {
+                            continue;
+                        }
+                        if(name == "server" || name == "port" || name == "uid" || name == "database")
+                        rel.Add(item);
+
+                    }
+                    return string.Join(";", rel);
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+            }
+            return dBDataSource.Value;
+        }
+        #endregion
     }
 }
 

@@ -12,6 +12,9 @@ namespace DBUp_Mysql
     /// </summary>
     public class DbModels
     {
+        [Newtonsoft.Json.JsonIgnore]
+        public Setting Cs { get; set; }
+
         public DBSetting DbModel { get; set; }
         /// <summary>
         /// 表

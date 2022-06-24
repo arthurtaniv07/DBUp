@@ -64,6 +64,7 @@
     <Compile Include="Common\CompareAndShowResult\TableCompareAndShowResultHelper.cs" />
     <Compile Include="Common\CompareAndShowResult\DataBaseCompareAndShowResultHelper.cs" />
     <Compile Include="Common\CompareAndShowResult\CompareAndShowResultHelperBase.cs" />
+    <Compile Include="Common\AsyncHelper.cs" />
     <Compile Include="Common\NetworkAdapter.cs" />
     <Compile Include="Common\CompareAndShowResult\ICompareAndShowResultHelper.cs" />
     <Compile Include="Common\StMailHelper.cs" />
@@ -73,6 +74,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="DB\DBSqlHelper.cs" />
+    <Compile Include="Forms\FrmAnchorTips.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmAnchorTips.Designer.cs">
+      <DependentUpon>FrmAnchorTips.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Config.cs" />
     <Compile Include="Model\DataInfo\Dto\DataTableInfo.cs" />
     <Compile Include="Model\DBConnection.cs" />
@@ -153,6 +160,9 @@
     <Content Include="DLL\MySql.Data1.dll" />
     <Content Include="DLL\Newtonsoft.Json.dll" />
     <Content Include="DLL\Newtonsoft.Json.xml" />
+    <Content Include="Setting.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

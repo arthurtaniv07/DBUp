@@ -26,7 +26,7 @@ namespace DBUp_Mysql
         public string CreateSql { get; set; }
 
         // 所有列信息（key：列名， value：列信息）
-        public SortedDictionary<string, ColumnInfo> AllColumnInfo { get; set; }
+        public Dictionary<string, ColumnInfo> AllColumnInfo { get; set; }
         /// <summary>
         ///  表名
         /// </summary>
@@ -41,12 +41,68 @@ namespace DBUp_Mysql
         public TableOption Option { get; set; }
         public TableInfo()
         {
-            AllColumnInfo = new SortedDictionary<string, ColumnInfo>();
+            AllColumnInfo = new Dictionary<string, ColumnInfo>();
             PrimaryKeyColumnNames = new List<string>();
             IndexInfo = new Dictionary<string, TableIndex>();
             TableNames = new List<string>();
         }
 
+
+
+        #region Column
+
+        public void ChangeColumn(ColumnInfo column, SortedOptionType sortType, string colName = null)
+        {
+            if (sortType == SortedOptionType.FIRST && AllColumnInfo.First().Value.ColumnName == colName)
+            {
+                return;
+            }
+            AllColumnInfo.Remove(column.ColumnName);
+            AddColumn(column, sortType, colName);
+        }
+
+        public void AddColumn(ColumnInfo column, SortedOptionType sortType, string colName = null)
+        {
+            var dir2 = new Dictionary<string, ColumnInfo>();
+            if (sortType == SortedOptionType.FIRST)
+            {
+                dir2.Add(column.ColumnName, column);
+                foreach (var item in AllColumnInfo)
+                    dir2.Add(item.Key, item.Value);
+            }
+            else if (sortType == SortedOptionType.AFTER)
+            {
+                foreach (var item in AllColumnInfo)
+                {
+                    dir2.Add(item.Key, item.Value);
+                    if (item.Key == colName)
+                    {
+                        dir2.Add(column.ColumnName, column);
+                    }
+                }
+            }
+            AllColumnInfo.Clear();
+            AllColumnInfo = dir2;
+            SetColumnIndex();
+
+
+            if (column.IsPrimaryKey)
+                PrimaryKeyColumnNames.Add(column.ColumnName);
+            //if(column.IsUnique)
+            //     IndexInfo.Add() 
+
+        }
+
+        public void SetColumnIndex()
+        {
+            var inx = -1;
+            foreach (var item in AllColumnInfo)
+            {
+                inx++;
+                item.Value.ColumnIndex = inx;
+            }
+        }
+        #endregion
 
     }
 
@@ -170,6 +226,10 @@ namespace DBUp_Mysql
         /// 是否是虚拟列 5.7及以上版本支持
         /// </summary>
         public VirtualInfo Virtual { get; set; }
+        /// <summary>
+        /// 列的顺序
+        /// </summary>
+        public int ColumnIndex { get; set; }
     }
     /// <summary>
     /// 虚拟列信息
