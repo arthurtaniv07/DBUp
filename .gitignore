@@ -9,3 +9,19 @@
 
 */Debug
 /DBUp_Mysql/bin/Debug/result
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in
+[Oo]bj
+[Ll]og
+!/POS.Web/Client/log/
+!/POS.Web/pos/log/
+
+*.[Ll]og
+.vs/

@@ -222,6 +222,7 @@ namespace DBUp_Mysql
         System.Threading.Thread t = null;
         private void btnCompare_Click(object sender, EventArgs e)
         {
+            
             //Dictionary<string, string> aaa = new Dictionary<string, string>();
             //aaa.Add("stu", "1");
             //aaa.Add("Id", "1");

@@ -1,8 +1,0 @@
-[
-  {
-    "CreateSQL": "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `aaa` AS select `test`.`Type` AS `Type`,`test`.`Score` AS `Score`,`test`.`Time` AS `Time`,`test`.`b` AS `b` from `test`",
-    "ClientCharSet": "utf8mb4",
-    "CharSet": "utf8mb4_general_ci",
-    "Name": "aaa"
-  }
-]
